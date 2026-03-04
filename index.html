@@ -4,11 +4,20 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>아이담 — 오늘의 그림이 내일의 동화가 됩니다</title>
-  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Sunflower:wght@300;500;700&display=swap" rel="stylesheet"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     html{scroll-behavior:smooth;}
-    body{font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#3D1C0A;background:#fff;line-height:1.6;overflow-x:hidden;}
+    /* 본문: Sunflower 300 — 둥글고 가벼워서 시인성 좋음 */
+    body{font-family:'Sunflower','Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-weight:300;color:#3D1C0A;background:#fff;line-height:1.7;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+    /* 큰 제목만 Jua — 브랜드 캐릭터 유지 */
+    h1,.logo-name,.hero-badge,.section-title{font-family:'Jua','Sunflower',sans-serif;}
+    /* 중간 요소: Sunflower 500 */
+    h2,h3,strong,b,.nav-cta,.btn-primary,.btn-secondary,.btn-submit,
+    .stat-num,.feature-item h3,.pain-answer,.slogan-main,
+    .benefit-item h4,.faq-q,.logo-num,.logo-name{font-weight:500;}
+    /* 버튼·태그류: 약간 강조 */
+    .chip,.feature-tag,.strip-item,.form-row label{font-weight:500;letter-spacing:.02em;}
 
     /* ── 컬러 변수 ── */
     :root{
@@ -204,19 +213,48 @@
 <nav>
   <div class="nav-inner">
     <a class="logo-wrap" href="#">
-      <!-- 아이담 로고 -->
-      <svg class="logo-icon" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-        <rect x="4" y="8" width="22" height="22" rx="4" fill="#FFF0EA"/>
-        <rect x="7" y="6" width="22" height="22" rx="4" fill="#FFD9C2"/>
-        <rect x="9" y="8" width="22" height="22" rx="4" fill="white"/>
-        <line x1="20" y1="8" x2="20" y2="30" stroke="#FFD9C2" stroke-width="1.5"/>
-        <text x="11" y="24" font-size="10" fill="#FF6B35">★</text>
-        <text x="21" y="20" font-size="8" fill="#FFB347">✦</text>
-        <!-- 아이 얼굴 -->
-        <circle cx="28" cy="8" r="6" fill="#FF6B35"/>
-        <circle cx="26.5" cy="7" r="1.2" fill="#fff"/>
-        <circle cx="29.5" cy="7" r="1.2" fill="#fff"/>
-        <path d="M26 10 Q28 11.5 30 10" stroke="#fff" stroke-width="1" fill="none" stroke-linecap="round"/>
+      <!-- 아이담 로고 E — 크레파스 묶음 -->
+      <svg class="logo-icon" width="44" height="36" viewBox="0 0 44 36" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="nc1" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FF6B35"/><stop offset="100%" stop-color="#E04010"/></linearGradient>
+          <linearGradient id="nc2" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFB347"/><stop offset="100%" stop-color="#E07A00"/></linearGradient>
+          <linearGradient id="nc3" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FF7A5C"/><stop offset="100%" stop-color="#E04030"/></linearGradient>
+          <linearGradient id="nc4" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#34C172"/><stop offset="100%" stop-color="#1A8A4A"/></linearGradient>
+          <linearGradient id="nc5" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#4A9FE0"/><stop offset="100%" stop-color="#2060A0"/></linearGradient>
+        </defs>
+        <!-- 크레파스 1 (왼쪽, 빨강) -->
+        <g transform="rotate(-14,7,28)">
+          <rect x="3" y="10" width="8" height="22" rx="2" fill="url(#nc1)"/>
+          <polygon points="3,10 11,10 7,3" fill="#C03010"/>
+          <rect x="3" y="28" width="8" height="4" rx="1" fill="rgba(255,255,255,.25)"/>
+        </g>
+        <!-- 크레파스 2 (주황) -->
+        <g transform="rotate(-7,15,28)">
+          <rect x="11" y="9" width="8" height="23" rx="2" fill="url(#nc2)"/>
+          <polygon points="11,9 19,9 15,2" fill="#C07000"/>
+          <rect x="11" y="28" width="8" height="4" rx="1" fill="rgba(255,255,255,.2)"/>
+        </g>
+        <!-- 크레파스 3 (중앙, 살구·가장 김) -->
+        <g transform="rotate(0,22,28)">
+          <rect x="18" y="7" width="8" height="25" rx="2" fill="url(#nc3)"/>
+          <polygon points="18,7 26,7 22,0" fill="#C02020"/>
+          <rect x="18" y="28" width="8" height="4" rx="1" fill="rgba(255,255,255,.25)"/>
+        </g>
+        <!-- 크레파스 4 (초록) -->
+        <g transform="rotate(7,29,28)">
+          <rect x="25" y="9" width="8" height="23" rx="2" fill="url(#nc4)"/>
+          <polygon points="25,9 33,9 29,2" fill="#107030"/>
+          <rect x="25" y="28" width="8" height="4" rx="1" fill="rgba(255,255,255,.2)"/>
+        </g>
+        <!-- 크레파스 5 (오른쪽, 파랑) -->
+        <g transform="rotate(14,37,28)">
+          <rect x="33" y="10" width="8" height="22" rx="2" fill="url(#nc5)"/>
+          <polygon points="33,10 41,10 37,3" fill="#1040A0"/>
+          <rect x="33" y="28" width="8" height="4" rx="1" fill="rgba(255,255,255,.2)"/>
+        </g>
+        <!-- 반짝임 -->
+        <circle cx="22" cy="34" r="3" fill="#FFD700" opacity=".7"/>
+        <text x="19.5" y="36" font-size="4" fill="white" font-weight="900">★</text>
       </svg>
       <span class="logo-name">아이<em>담</em></span>
     </a>
@@ -557,10 +595,20 @@
 <!-- Footer -->
 <footer>
   <div class="footer-logo">
-    <svg width="32" height="32" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-      <rect x="9" y="8" width="22" height="22" rx="4" fill="white" opacity=".15"/>
-      <text x="12" y="24" font-size="13" fill="#FF6B35">★</text>
-      <circle cx="28" cy="8" r="6" fill="#FF6B35"/>
+    <svg width="48" height="38" viewBox="0 0 44 36" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="fc1" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FF8C60"/><stop offset="100%" stop-color="#FF5520"/></linearGradient>
+        <linearGradient id="fc2" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFD070"/><stop offset="100%" stop-color="#FFB000"/></linearGradient>
+        <linearGradient id="fc3" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FF9080"/><stop offset="100%" stop-color="#FF5040"/></linearGradient>
+        <linearGradient id="fc4" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#60D090"/><stop offset="100%" stop-color="#20A060"/></linearGradient>
+        <linearGradient id="fc5" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#70C0FF"/><stop offset="100%" stop-color="#3070C0"/></linearGradient>
+      </defs>
+      <g transform="rotate(-14,7,28)"><rect x="3" y="10" width="8" height="22" rx="2" fill="url(#fc1)"/><polygon points="3,10 11,10 7,3" fill="#C03010"/></g>
+      <g transform="rotate(-7,15,28)"><rect x="11" y="9" width="8" height="23" rx="2" fill="url(#fc2)"/><polygon points="11,9 19,9 15,2" fill="#C07000"/></g>
+      <g transform="rotate(0,22,28)"><rect x="18" y="7" width="8" height="25" rx="2" fill="url(#fc3)"/><polygon points="18,7 26,7 22,0" fill="#C02020"/></g>
+      <g transform="rotate(7,29,28)"><rect x="25" y="9" width="8" height="23" rx="2" fill="url(#fc4)"/><polygon points="25,9 33,9 29,2" fill="#107030"/></g>
+      <g transform="rotate(14,37,28)"><rect x="33" y="10" width="8" height="22" rx="2" fill="url(#fc5)"/><polygon points="33,10 41,10 37,3" fill="#1040A0"/></g>
+      <circle cx="22" cy="34" r="3" fill="#FFD700" opacity=".6"/>
     </svg>
     <span class="footer-logo-name">아이<em>담</em></span>
   </div>
