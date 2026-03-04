@@ -88,12 +88,21 @@ echo "${YELLOW}[6/6] 패키지 설치 (npm install)${NC}"
 npm install
 echo "${GREEN}✅ 패키지 설치 완료${NC}"
 
+# ── alias 등록 ───────────────────────────────────
+SHELL_RC="$HOME/.zshrc"
+[ -n "$BASH_VERSION" ] && SHELL_RC="$HOME/.bashrc"
+if ! grep -q 'alias aidam=' "$SHELL_RC" 2>/dev/null; then
+  echo '\n# 아이담 프로젝트 단축 명령어\nalias aidam="~/.local/bin/doppler run -- npm run dev"' >> "$SHELL_RC"
+  echo "${GREEN}✅ alias 'aidam' 등록 완료${NC}"
+fi
+source "$SHELL_RC" 2>/dev/null || true
+
 # ── 완료 안내 ────────────────────────────────────
 echo ""
 echo "══════════════════════════════════════════"
 echo "${GREEN}🎉 셋업 완료! 아래 명령어로 개발을 시작하세요:${NC}"
 echo ""
-echo "  doppler run -- npm run dev"
+echo "  cd $(pwd) && aidam"
 echo ""
 echo "📌 작업 후 커밋하면 자동으로 GitHub에 push됩니다."
 echo "   git add ."
