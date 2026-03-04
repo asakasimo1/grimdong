@@ -1,0 +1,3 @@
+setup:
+  project: aidam
+  config: dev

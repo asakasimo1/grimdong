@@ -90,16 +90,22 @@ npm run dev
 
 ---
 
-## 환경 변수 (.env.local)
+## 환경 변수 — Doppler로 중앙 관리
 
+환경 변수는 **Doppler** 클라우드에서 관리. `.env.local` 파일 공유 불필요.
+
+- 프로젝트명: `aidam` / config: `dev`
+- 웹 대시보드: https://dashboard.doppler.com
+
+관리하는 변수:
 ```
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_anon_key
-VITE_KAKAO_JS_KEY=your_kakao_key
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+VITE_KAKAO_JS_KEY
 ```
 
-> ⚠️ `.env.local` 은 `.gitignore` 에 포함 — **절대 커밋하지 않음**
-> 값은 팀원 간 별도 공유 (카카오톡, 노션 등)
+> 새 환경 변수 추가 시 Doppler 대시보드 → aidam → dev 에서 추가.
+> `.env.local` 파일은 더 이상 사용하지 않음.
 
 ---
 
@@ -166,10 +172,13 @@ chore: 설정, 패키지 변경
 ## 자주 쓰는 명령어
 
 ```bash
-npm run dev      # 개발 서버 (http://localhost:5173)
-npm run build    # 프로덕션 빌드
-npm run preview  # 빌드 결과 미리보기
-npm run lint     # ESLint 검사
+doppler run -- npm run dev      # 개발 서버 (환경변수 자동 주입)
+doppler run -- npm run build    # 프로덕션 빌드
+npm run preview                 # 빌드 결과 미리보기
+npm run lint                    # ESLint 검사
+
+doppler secrets                 # 현재 환경변수 목록 확인
+doppler secrets set KEY=value   # 환경변수 추가/수정
 ```
 
 ---
