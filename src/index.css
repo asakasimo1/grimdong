@@ -1,0 +1,30 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --font-kr-display: 'Cafe24 Ssurround', 'Pretendard Variable', sans-serif;
+  --font-kr-body:    'Pretendard Variable', 'Apple SD Gothic Neo', sans-serif;
+  --font-en:         'Poppins', sans-serif;
+
+  --color-primary:   #FF6B35;
+  --color-secondary: #FFD43B;
+  --color-bg:        #FFFBF5;
+  --color-surface:   #FFFFFF;
+  --color-text:      #1A1A2E;
+  --color-muted:     #888;
+  --color-border:    #E8E8E8;
+  --radius:          16px;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-kr-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
+img { display: block; max-width: 100%; }
