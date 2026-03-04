@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>아이담 — 시안 1: 세련된</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Noto+Serif+KR:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:   #0D1B2A;
+  --navy2:  #1B2E45;
+  --gold:   #C9A96E;
+  --gold-lt:#E8D5B0;
+  --cream:  #F7F2EA;
+  --white:  #FFFFFF;
+  --gray:   #8A9BB0;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Pretendard Variable',sans-serif;background:var(--cream);color:var(--navy);overflow-x:hidden;}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:24px 60px;
+  background:rgba(247,242,234,.92);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(201,169,110,.2);
+}
+.nav-logo{font-family:'Noto Serif KR',serif;font-size:22px;font-weight:600;color:var(--navy);letter-spacing:.05em;}
+.nav-logo span{color:var(--gold);}
+.nav-cta{
+  padding:10px 28px;border:1px solid var(--gold);
+  background:transparent;color:var(--navy);
+  font-size:13px;font-weight:500;letter-spacing:.08em;
+  cursor:pointer;transition:.3s;text-transform:uppercase;
+}
+.nav-cta:hover{background:var(--gold);color:var(--white);}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;
+  display:grid;grid-template-columns:1fr 1fr;
+  padding:120px 60px 80px;
+  gap:60px;
+  align-items:center;
+}
+.hero-left{}
+.hero-tag{
+  display:inline-block;
+  font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--gold);border:1px solid var(--gold);
+  padding:6px 16px;margin-bottom:32px;
+}
+.hero-title{
+  font-family:'Noto Serif KR',serif;
+  font-size:clamp(38px,4.5vw,64px);
+  font-weight:300;line-height:1.25;
+  color:var(--navy);
+  margin-bottom:28px;
+}
+.hero-title strong{font-weight:600;color:var(--gold);}
+.hero-desc{
+  font-size:16px;font-weight:300;line-height:1.9;
+  color:#4A5E72;max-width:440px;margin-bottom:48px;
+}
+.hero-actions{display:flex;gap:16px;align-items:center;}
+.btn-primary{
+  padding:16px 40px;
+  background:var(--navy);color:var(--white);
+  font-size:13px;letter-spacing:.1em;text-transform:uppercase;
+  cursor:pointer;border:none;transition:.3s;
+}
+.btn-primary:hover{background:var(--gold);}
+.btn-secondary{
+  font-size:13px;letter-spacing:.05em;color:var(--gray);
+  text-decoration:underline;cursor:pointer;background:none;border:none;
+}
+.hero-stats{display:flex;gap:48px;margin-top:64px;padding-top:40px;border-top:1px solid rgba(201,169,110,.25);}
+.stat-num{font-family:'Playfair Display',serif;font-size:36px;color:var(--navy);}
+.stat-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray);margin-top:4px;}
+
+.hero-right{
+  position:relative;
+  background:var(--navy);
+  border-radius:2px;
+  min-height:560px;
+  display:flex;flex-direction:column;
+  justify-content:flex-end;
+  padding:48px;
+  overflow:hidden;
+}
+.hero-right::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--navy2) 0%,var(--navy) 100%);
+}
+.hero-mockup{
+  position:absolute;top:40px;left:50%;transform:translateX(-50%);
+  width:240px;height:280px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(201,169,110,.2);
+  border-radius:2px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;
+}
+.mockup-canvas{
+  width:160px;height:160px;
+  background:rgba(255,255,255,.08);
+  border:1px dashed rgba(201,169,110,.3);
+  border-radius:2px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;
+}
+.mockup-label{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:rgba(201,169,110,.7);}
+.hero-right-text{position:relative;z-index:1;}
+.hero-right-text h3{font-family:'Noto Serif KR',serif;font-size:20px;font-weight:300;color:var(--gold-lt);margin-bottom:8px;}
+.hero-right-text p{font-size:13px;color:rgba(255,255,255,.5);line-height:1.7;}
+
+/* ── SECTION TITLE ── */
+.section{padding:100px 60px;}
+.section-tag{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:16px;}
+.section-title{font-family:'Noto Serif KR',serif;font-size:clamp(28px,3vw,44px);font-weight:300;line-height:1.3;color:var(--navy);margin-bottom:20px;}
+.section-title strong{font-weight:600;}
+.section-desc{font-size:15px;color:#4A5E72;line-height:1.9;max-width:500px;}
+
+/* ── DIVIDER ── */
+.divider{width:60px;height:1px;background:var(--gold);margin:32px 0;}
+
+/* ── FEATURES ── */
+.features{background:var(--navy);}
+.features .section-tag{color:var(--gold);}
+.features .section-title{color:var(--white);}
+.features .section-desc{color:rgba(255,255,255,.5);}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:64px;background:rgba(201,169,110,.15);}
+.feature-card{
+  padding:48px 40px;
+  background:var(--navy);
+  transition:.3s;
+}
+.feature-card:hover{background:var(--navy2);}
+.feature-num{font-family:'Playfair Display',serif;font-size:48px;color:rgba(201,169,110,.2);margin-bottom:24px;}
+.feature-name{font-family:'Noto Serif KR',serif;font-size:20px;font-weight:400;color:var(--white);margin-bottom:12px;}
+.feature-text{font-size:14px;color:rgba(255,255,255,.45);line-height:1.8;}
+.feature-icon{font-size:28px;margin-bottom:20px;}
+
+/* ── PROCESS ── */
+.process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:64px;}
+.process-step{padding:0 32px;border-right:1px solid rgba(201,169,110,.2);position:relative;}
+.process-step:last-child{border:none;}
+.process-n{font-family:'Playfair Display',serif;font-size:64px;color:rgba(201,169,110,.15);position:absolute;top:-16px;left:24px;}
+.process-title{font-size:16px;font-weight:500;color:var(--navy);margin-bottom:10px;padding-top:40px;}
+.process-text{font-size:13px;color:#6A7E92;line-height:1.8;}
+
+/* ── CTA ── */
+.cta-section{
+  background:var(--navy);
+  padding:100px 60px;
+  text-align:center;
+  position:relative;overflow:hidden;
+}
+.cta-section::before{
+  content:'';position:absolute;
+  width:600px;height:600px;
+  border-radius:50%;
+  border:1px solid rgba(201,169,110,.1);
+  top:50%;left:50%;transform:translate(-50%,-50%);
+}
+.cta-section::after{
+  content:'';position:absolute;
+  width:900px;height:900px;
+  border-radius:50%;
+  border:1px solid rgba(201,169,110,.05);
+  top:50%;left:50%;transform:translate(-50%,-50%);
+}
+.cta-tag{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:24px;}
+.cta-title{font-family:'Noto Serif KR',serif;font-size:clamp(32px,4vw,56px);font-weight:300;color:var(--white);line-height:1.3;margin-bottom:16px;}
+.cta-title strong{font-weight:600;color:var(--gold);}
+.cta-desc{font-size:15px;color:rgba(255,255,255,.5);margin-bottom:48px;}
+.cta-form{display:flex;gap:12px;max-width:480px;margin:0 auto;position:relative;z-index:1;}
+.cta-input{
+  flex:1;padding:16px 20px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(201,169,110,.3);
+  color:var(--white);font-size:14px;
+  outline:none;
+}
+.cta-input::placeholder{color:rgba(255,255,255,.3);}
+.cta-btn{
+  padding:16px 32px;
+  background:var(--gold);
+  border:none;color:var(--navy);
+  font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  cursor:pointer;transition:.3s;white-space:nowrap;
+}
+.cta-btn:hover{background:var(--gold-lt);}
+.cta-note{font-size:12px;color:rgba(255,255,255,.3);margin-top:16px;position:relative;z-index:1;}
+
+/* ── FOOTER ── */
+footer{padding:40px 60px;border-top:1px solid rgba(201,169,110,.15);display:flex;justify-content:space-between;align-items:center;}
+.footer-logo{font-family:'Noto Serif KR',serif;font-size:18px;color:var(--navy);}
+.footer-logo span{color:var(--gold);}
+.footer-copy{font-size:12px;color:var(--gray);letter-spacing:.05em;}
+
+/* ── PALETTE CHIP ── */
+.palette-bar{
+  padding:20px 60px;
+  background:var(--white);
+  display:flex;gap:12px;align-items:center;
+  border-top:1px solid rgba(0,0,0,.06);
+  font-size:12px;color:var(--gray);letter-spacing:.05em;
+}
+.chip{width:32px;height:32px;border-radius:50%;display:inline-block;}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">아이<span>담</span></div>
+  <button class="nav-cta">사전 등록</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-tag">AI · 그림일기 · 동화</div>
+    <h1 class="hero-title">
+      오늘의 그림이<br>
+      <strong>내일의 동화</strong>가<br>
+      됩니다
+    </h1>
+    <p class="hero-desc">아이가 그린 그림 하나로 AI가 완성하는 나만의 동화. 매일 5분, 창작의 기쁨을 키워드립니다.</p>
+    <div class="hero-actions">
+      <button class="btn-primary">무료 사전 등록</button>
+      <button class="btn-secondary">서비스 알아보기 →</button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="stat-num">247</div><div class="stat-label">사전 등록 완료</div></div>
+      <div><div class="stat-num">5분</div><div class="stat-label">하루 창작 시간</div></div>
+      <div><div class="stat-num">7–8세</div><div class="stat-label">추천 연령</div></div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-mockup">
+      <div class="mockup-canvas">🎨</div>
+      <div class="mockup-label">오늘의 그림일기</div>
+    </div>
+    <div class="hero-right-text">
+      <h3>AI가 동화로 완성합니다</h3>
+      <p>아이의 그림을 분석해 캐릭터·배경·스토리를 자동 생성</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section features">
+  <div class="section-tag">Core Features</div>
+  <h2 class="section-title">세 가지 <strong>핵심 경험</strong></h2>
+  <p class="section-desc">그리고, 읽고, 성장합니다.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-num">01</div>
+      <div class="feature-icon">✏️</div>
+      <div class="feature-name">AI 그림일기</div>
+      <div class="feature-text">태블릿 화면에 자유롭게 그리면 AI가 동화로 변환합니다. 아이만의 이야기가 완성됩니다.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-num">02</div>
+      <div class="feature-icon">🏆</div>
+      <div class="feature-name">성장 게임화</div>
+      <div class="feature-text">매일 그리면 스트릭이 쌓이고 캐릭터가 성장합니다. 창작 습관이 자연스럽게 형성됩니다.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-num">03</div>
+      <div class="feature-icon">📚</div>
+      <div class="feature-name">성장 포트폴리오</div>
+      <div class="feature-text">모든 그림일기가 자동 저장되어 아이의 성장 기록이 됩니다. 월별 리포트로 확인하세요.</div>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="section">
+  <div class="section-tag">How It Works</div>
+  <h2 class="section-title">단 <strong>4단계</strong>, 5분 완성</h2>
+  <div class="divider"></div>
+  <div class="process-grid">
+    <div class="process-step">
+      <div class="process-n">1</div>
+      <div class="process-title">주제 확인</div>
+      <div class="process-text">오늘의 그림 주제를 확인합니다</div>
+    </div>
+    <div class="process-step">
+      <div class="process-n">2</div>
+      <div class="process-title">자유롭게 그리기</div>
+      <div class="process-text">태블릿에 마음껏 그립니다</div>
+    </div>
+    <div class="process-step">
+      <div class="process-n">3</div>
+      <div class="process-title">AI 동화 생성</div>
+      <div class="process-text">AI가 동화를 자동 완성합니다</div>
+    </div>
+    <div class="process-step">
+      <div class="process-n">4</div>
+      <div class="process-title">레벨 업!</div>
+      <div class="process-text">캐릭터가 성장하고 기록됩니다</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-tag">Early Bird</div>
+  <h2 class="cta-title">지금 등록하면<br><strong>프리미엄 3개월 무료</strong></h2>
+  <p class="cta-desc">한정 얼리버드 혜택 · 출시 즉시 알림 · 베타 테스터 초대</p>
+  <div class="cta-form">
+    <input class="cta-input" type="email" placeholder="이메일을 입력하세요"/>
+    <button class="cta-btn">무료 등록</button>
+  </div>
+  <p class="cta-note">스팸 없음 · 언제든 취소 가능</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">아이<span>담</span></div>
+  <div class="footer-copy">© 2026 AIDAM · hello@aidam.kr</div>
+</footer>
+
+<!-- 팔레트 -->
+<div class="palette-bar">
+  <strong>Color Palette :</strong>
+  <span class="chip" style="background:#0D1B2A;" title="#0D1B2A"></span>
+  <span class="chip" style="background:#1B2E45;" title="#1B2E45"></span>
+  <span class="chip" style="background:#C9A96E;" title="#C9A96E (Gold)"></span>
+  <span class="chip" style="background:#E8D5B0;" title="#E8D5B0"></span>
+  <span class="chip" style="background:#F7F2EA;" title="#F7F2EA (Cream)"></span>
+  &nbsp;|&nbsp; <strong>Font :</strong> Noto Serif KR · Playfair Display · Pretendard
+</div>
+
+</body>
+</html>
