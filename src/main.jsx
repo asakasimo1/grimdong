@@ -12,7 +12,7 @@ if (window.Kakao && !window.Kakao.isInitialized()) {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="/grimdong">
       <App />
       <Toaster position="top-center" />
     </BrowserRouter>

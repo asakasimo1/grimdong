@@ -1,10 +1,13 @@
 import styles from './LoginPage.module.css'
+import { supabase } from '../lib/supabase'
 
 export default function LoginPage() {
-  const handleKakaoLogin = () => {
-    window.Kakao.Auth.authorize({
-      redirectUri: `${window.location.origin}/auth/kakao/callback`,
-      scope: 'profile_nickname,profile_image,account_email',
+  const handleKakaoLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: {
+        redirectTo: `${window.location.origin}/auth/kakao/callback`,
+      },
     })
   }
 
