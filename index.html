@@ -4,20 +4,66 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>아이담 — 오늘의 그림이 내일의 동화가 됩니다</title>
-  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Sunflower:wght@300;500;700&display=swap" rel="stylesheet"/>
+  <!-- Google Fonts: 카페24 써라운드(KR 헤드) + Poppins(EN 본문) + Montserrat(EN 헤드) -->
+  <link href="https://fonts.googleapis.com/css2?family=Cafe24+Ssurround&family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet"/>
+  <!-- Pretendard (KR 본문) — jsDelivr CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     html{scroll-behavior:smooth;}
-    /* 본문: Sunflower 300 — 둥글고 가벼워서 시인성 좋음 */
-    body{font-family:'Sunflower','Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-weight:300;color:#3D1C0A;background:#fff;line-height:1.7;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
-    /* 큰 제목만 Jua — 브랜드 캐릭터 유지 */
-    h1,.logo-name,.hero-badge,.section-title{font-family:'Jua','Sunflower',sans-serif;}
-    /* 중간 요소: Sunflower 500 */
-    h2,h3,strong,b,.nav-cta,.btn-primary,.btn-secondary,.btn-submit,
-    .stat-num,.feature-item h3,.pain-answer,.slogan-main,
-    .benefit-item h4,.faq-q,.logo-num,.logo-name{font-weight:500;}
-    /* 버튼·태그류: 약간 강조 */
-    .chip,.feature-tag,.strip-item,.form-row label{font-weight:500;letter-spacing:.02em;}
+
+    /* ── 폰트 변수 ──────────────────────────────────────────
+       KR 헤드  : 카페24 써라운드 — 둥글고 유아 친화적
+       KR 본문  : Pretendard Variable — 얇고 깔끔한 가독성
+       EN 헤드  : Montserrat — 강인하고 세련된 영문
+       EN 본문  : Poppins — 부드럽고 가벼운 영문
+    ─────────────────────────────────────────────────────── */
+    :root{
+      --font-kr-display:'Cafe24 Ssurround','Pretendard Variable',sans-serif;
+      --font-kr-body:'Pretendard Variable','Apple SD Gothic Neo',sans-serif;
+      --font-en-display:'Montserrat','Poppins',sans-serif;
+      --font-en-body:'Poppins','Pretendard Variable',sans-serif;
+    }
+
+    /* 기본 본문 — Pretendard 400 */
+    body{
+      font-family:var(--font-kr-body);
+      font-weight:400;
+      color:#3D1C0A;
+      background:#fff;
+      line-height:1.75;
+      overflow-x:hidden;
+      -webkit-font-smoothing:antialiased;
+      word-break:keep-all;
+    }
+    /* KR 대제목 — 카페24 써라운드 */
+    h1,.section-title,.logo-name,.pain-answer{
+      font-family:var(--font-kr-display);
+    }
+    /* KR 소제목·강조 — Pretendard 600 */
+    h2,h3,.feature-item h3,.benefit-item h4,
+    .faq-q,.slogan-main,.hero-badge{
+      font-family:var(--font-kr-body);
+      font-weight:600;
+    }
+    /* EN 대제목 — Montserrat (숫자·영문 통계·뱃지) */
+    .stat-num,.logo-sub,.strip-item .en,
+    .nav-cta,.btn-primary,.btn-secondary,.btn-submit{
+      font-family:var(--font-en-body);
+      font-weight:600;
+    }
+    /* 버튼·네비 — Poppins 600 */
+    .nav-cta,.btn-primary,.btn-secondary,.btn-submit{
+      font-family:var(--font-en-body);
+      font-weight:600;
+      letter-spacing:.01em;
+    }
+    /* 칩·태그·라벨 — Pretendard 500 */
+    .chip,.feature-tag,.form-row label,.section-label,
+    .strip-item,.logo-num{
+      font-family:var(--font-kr-body);
+      font-weight:500;
+    }
 
     /* ── 컬러 변수 ── */
     :root{
