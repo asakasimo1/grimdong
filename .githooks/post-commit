@@ -1,0 +1,13 @@
+#!/bin/sh
+# 커밋 후 자동으로 origin/app 에 push
+
+BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+echo "🔄 [auto-push] $BRANCH → origin/$BRANCH ..."
+git push origin "$BRANCH"
+
+if [ $? -eq 0 ]; then
+  echo "✅ push 완료"
+else
+  echo "⚠️  push 실패 — 수동으로 'git push origin $BRANCH' 실행해주세요"
+fi

@@ -1,0 +1,8 @@
+#!/bin/sh
+# pull(merge) 후 node_modules 자동 업데이트
+
+if git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD | grep -q "package.json"; then
+  echo "📦 package.json 변경 감지 → npm install 실행..."
+  npm install
+  echo "✅ 패키지 설치 완료"
+fi
