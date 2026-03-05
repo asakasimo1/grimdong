@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Canvas } from 'fabric'
+import { Canvas, PencilBrush } from 'fabric'
 import toast from 'react-hot-toast'
 import styles from './DrawPage.module.css'
 
@@ -18,17 +18,24 @@ export default function DrawPage() {
 
   // Fabric.js 초기화
   useEffect(() => {
+    if (fabricRef.current) return   // StrictMode 이중 실행 방지
+
     const canvas = new Canvas(canvasEl.current, {
       isDrawingMode: true,
       backgroundColor: '#FFFFFF',
       width:  Math.min(window.innerWidth - 40, 480),
       height: Math.min(window.innerWidth - 40, 480),
     })
-    canvas.freeDrawingBrush.color = color
-    canvas.freeDrawingBrush.width = size
+    const brush = new PencilBrush(canvas)
+    brush.color = color
+    brush.width = size
+    canvas.freeDrawingBrush = brush
     fabricRef.current = canvas
 
-    return () => canvas.dispose()
+    return () => {
+      canvas.dispose()
+      fabricRef.current = null
+    }
   }, [])
 
   // 색상·굵기 반영
