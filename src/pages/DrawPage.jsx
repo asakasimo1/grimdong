@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Canvas, PencilBrush } from 'fabric'
 import toast from 'react-hot-toast'
+import { supabase } from '../lib/supabase'
+import { useAuthStore } from '../store/authStore'
 import styles from './DrawPage.module.css'
 
 const COLORS = ['#E74C3C','#E67E22','#F1C40F','#27AE60','#2980B9','#8E44AD','#1A1A2E','#FFFFFF']
@@ -11,6 +13,7 @@ export default function DrawPage() {
   const navigate    = useNavigate()
   const canvasEl    = useRef(null)
   const fabricRef   = useRef(null)
+  const user        = useAuthStore((s) => s.user)
   const [color, setColor]   = useState('#E74C3C')
   const [size, setSize]     = useState(8)
   const [isEraser, setIsEraser] = useState(false)
@@ -99,9 +102,35 @@ export default function DrawPage() {
       const raw  = data.choices?.[0]?.message?.content ?? ''
       const story = JSON.parse(raw)
 
-      // 임시로 sessionStorage에 저장 후 이동 (추후 Supabase 저장으로 교체)
-      sessionStorage.setItem('currentStory', JSON.stringify({ ...story, imageDataUrl: dataUrl }))
-      navigate('/story/preview')
+      // 이미지 → Blob 변환 후 Supabase Storage 업로드
+      const blob = await fetch(dataUrl).then((r) => r.blob())
+      const fileName = `${user.id}/${Date.now()}.jpg`
+      const { error: uploadError } = await supabase.storage
+        .from('drawings')
+        .upload(fileName, blob, { contentType: 'image/jpeg' })
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('drawings')
+        .getPublicUrl(fileName)
+
+      // Supabase stories 테이블에 저장
+      const { data: saved, error: insertError } = await supabase
+        .from('stories')
+        .insert({
+          user_id:    user.id,
+          title:      story.title,
+          story:      story.story,
+          emotion:    story.emotion,
+          keywords:   story.keywords,
+          char_count: story.char_count,
+          image_url:  publicUrl,
+        })
+        .select('id')
+        .single()
+      if (insertError) throw insertError
+
+      navigate(`/story/${saved.id}`)
 
     } catch (err) {
       console.error(err)

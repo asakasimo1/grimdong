@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 import styles from './StoryPage.module.css'
 
 export default function StoryPage() {
   const navigate = useNavigate()
+  const { id }   = useParams()
   const [story, setStory] = useState(null)
 
   useEffect(() => {
-    const raw = sessionStorage.getItem('currentStory')
-    if (!raw) return navigate('/home')
-    setStory(JSON.parse(raw))
-  }, [navigate])
+    supabase.from('stories').select('*').eq('id', id).single()
+      .then(({ data, error }) => {
+        if (error || !data) return navigate('/home')
+        setStory(data)
+      })
+  }, [id, navigate])
 
   if (!story) return null
 
@@ -24,7 +28,7 @@ export default function StoryPage() {
     <div className={styles.wrap}>
       {/* 그림 */}
       <div className={styles.imgWrap}>
-        <img src={story.imageDataUrl} alt="내 그림" className={styles.img} />
+        <img src={story.image_url} alt="내 그림" className={styles.img} />
       </div>
 
       {/* 동화 카드 */}
