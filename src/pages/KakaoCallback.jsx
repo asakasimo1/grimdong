@@ -6,18 +6,13 @@ export default function KakaoCallback() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get('code')
-    if (!code) return navigate('/login')
-
-    supabase.auth.exchangeCodeForSession(code)
-      .then(({ error }) => {
-        if (error) {
-          console.error('카카오 로그인 오류:', error)
-          navigate('/login')
-        } else {
-          navigate('/home')
-        }
-      })
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error || !session) {
+        navigate('/login')
+      } else {
+        navigate('/home')
+      }
+    })
   }, [navigate])
 
   return (
