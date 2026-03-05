@@ -11,10 +11,8 @@ if (window.Kakao && !window.Kakao.isInitialized()) {
 }
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <BrowserRouter basename={import.meta.env.DEV ? '/' : '/grimdong'}>
-      <App />
-      <Toaster position="top-center" />
-    </BrowserRouter>
-  </StrictMode>,
+  <BrowserRouter basename={import.meta.env.DEV ? '/' : '/grimdong'}>
+    <App />
+    <Toaster position="top-center" />
+  </BrowserRouter>,
 )
