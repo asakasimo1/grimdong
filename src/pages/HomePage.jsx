@@ -19,6 +19,9 @@ export default function HomePage() {
       <section className={styles.greeting}>
         <p className={styles.hi}>안녕, <strong>{nickname}</strong>! 👋</p>
         <p className={styles.sub}>오늘의 그림을 그려볼까요?</p>
+        <p style={{ marginTop: '10px', fontSize: '0.95rem', color: '#FF6B35', fontWeight: 500 }}>
+          수아야, 아빠가 너를 위해 만들었어! 마음껏 그려봐 🖍️
+        </p>
       </section>
 
       {/* 그리기 시작 버튼 */}
