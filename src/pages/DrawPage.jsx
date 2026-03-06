@@ -1,13 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Canvas, PencilBrush, FabricImage } from 'fabric'
+import { Canvas, PencilBrush, CircleBrush, SprayBrush, FabricImage, FabricText } from 'fabric'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import styles from './DrawPage.module.css'
 
-const COLORS = ['#E74C3C','#E67E22','#F1C40F','#27AE60','#2980B9','#8E44AD','#1A1A2E','#FFFFFF']
-const SIZES  = [4, 8, 14, 22]
+const COLORS   = ['#E74C3C','#E67E22','#F1C40F','#27AE60','#2980B9','#8E44AD','#1A1A2E','#FFFFFF']
+const SIZES    = [4, 8, 14, 22]
+const STICKERS = ['⭐','❤️','🌈','🦋','🌸','🎈','🌟','☀️','🌙','🎵']
+
+const TOOLS = [
+  { key: 'pencil',  label: '🖊️ 연필' },
+  { key: 'circle',  label: '🔵 원형붓' },
+  { key: 'spray',   label: '💨 스프레이' },
+  { key: 'sticker', label: '⭐ 스티커' },
+]
 
 const TRANSFORM_STYLES = [
   {
@@ -38,10 +46,14 @@ export default function DrawPage() {
   const fabricRef     = useRef(null)
   const videoRef      = useRef(null)
   const galleryRef    = useRef(null)
+  const drawToolRef   = useRef('pencil')
+  const stickerRef    = useRef('⭐')
+  const historyRef    = useRef([])
+  const historyIdxRef = useRef(-1)
   const user          = useAuthStore((s) => s.user)
 
-  const [color, setColor]   = useState('#E74C3C')
-  const [size, setSize]     = useState(8)
+  const [color, setColor]     = useState('#E74C3C')
+  const [size, setSize]       = useState(8)
   const [isEraser, setIsEraser] = useState(false)
   const [loading, setLoading]   = useState(false)
   const [mode, setMode]         = useState('draw')
@@ -50,9 +62,11 @@ export default function DrawPage() {
   const [cameraStream, setCameraStream]   = useState(null)
   const [showTransform, setShowTransform]   = useState(false)
   const [transformStyle, setTransformStyle] = useState('지브리')
-
   const [transforming, setTransforming]     = useState(false)
   const [transformedImg, setTransformedImg] = useState(null)
+  const [drawTool, setDrawTool]             = useState('pencil')
+  const [selectedSticker, setSelectedSticker] = useState('⭐')
+  const [canUndo, setCanUndo]               = useState(false)
 
   // Fabric.js 초기화
   useEffect(() => {
@@ -64,22 +78,88 @@ export default function DrawPage() {
       height: Math.min(window.innerWidth - 40, 480),
     })
     const brush = new PencilBrush(canvas)
-    brush.color = color
-    brush.width = size
+    brush.color = '#E74C3C'
+    brush.width = 8
     canvas.freeDrawingBrush = brush
     fabricRef.current = canvas
+
+    // 초기 히스토리
+    historyRef.current = [JSON.stringify(canvas.toObject())]
+    historyIdxRef.current = 0
+
+    // 드로잉 완료 → 히스토리 저장
+    canvas.on('path:created', () => {
+      const state = JSON.stringify(fabricRef.current.toObject())
+      const arr = historyRef.current.slice(0, historyIdxRef.current + 1)
+      arr.push(state)
+      historyRef.current = arr
+      historyIdxRef.current = arr.length - 1
+      setCanUndo(true)
+    })
+
+    // 스티커 배치: 빈 영역 탭 → 이모지 추가
+    canvas.on('mouse:up', (e) => {
+      if (drawToolRef.current !== 'sticker') return
+      if (e.target) return
+      const pos = canvas.getScenePoint(e.e)
+      const emoji = new FabricText(stickerRef.current, {
+        left: pos.x, top: pos.y,
+        fontSize: 52, originX: 'center', originY: 'center',
+        selectable: true, hasControls: true,
+      })
+      canvas.add(emoji)
+      canvas.setActiveObject(emoji)
+      canvas.renderAll()
+      const state = JSON.stringify(canvas.toObject())
+      const arr = historyRef.current.slice(0, historyIdxRef.current + 1)
+      arr.push(state)
+      historyRef.current = arr
+      historyIdxRef.current = arr.length - 1
+      setCanUndo(true)
+    })
+
     return () => { canvas.dispose(); fabricRef.current = null }
   }, [])
 
-  // 색상·굵기 반영
+  // 브러시 설정 통합 (모드·툴·색상·굵기·지우개)
   useEffect(() => {
-    const c = fabricRef.current
-    if (!c) return
-    c.freeDrawingBrush.color = isEraser ? '#FFFFFF' : color
-    c.freeDrawingBrush.width = isEraser ? size * 2.5 : size
-  }, [color, size, isEraser])
+    const canvas = fabricRef.current
+    if (!canvas) return
 
-  // 카메라 스트림 video 연결
+    if (mode === 'photo' || drawTool === 'sticker') {
+      canvas.isDrawingMode = false
+      canvas.selection = false
+      return
+    }
+
+    canvas.isDrawingMode = true
+    canvas.selection = false
+    const col = isEraser ? '#FFFFFF' : color
+    const w   = isEraser ? size * 2.5 : size
+
+    let brush
+    if (drawTool === 'spray') {
+      brush = new SprayBrush(canvas)
+      brush.color   = col
+      brush.width   = Math.max(w * 3, 24)
+      brush.density = 25
+    } else if (drawTool === 'circle') {
+      brush = new CircleBrush(canvas)
+      brush.color = col
+      brush.width = w
+    } else {
+      brush = new PencilBrush(canvas)
+      brush.color = col
+      brush.width = w
+    }
+    canvas.freeDrawingBrush = brush
+  }, [mode, drawTool, color, size, isEraser])
+
+  // ref 동기화 (canvas 이벤트 핸들러용)
+  useEffect(() => { drawToolRef.current = drawTool }, [drawTool])
+  useEffect(() => { stickerRef.current = selectedSticker }, [selectedSticker])
+
+  // 카메라 스트림 연결
   useEffect(() => {
     if (showCamera && cameraStream && videoRef.current) {
       videoRef.current.srcObject = cameraStream
@@ -93,15 +173,40 @@ export default function DrawPage() {
     c.clear(); c.backgroundColor = '#FFFFFF'; c.renderAll()
   }
 
-  const handleClear = () => { clearCanvas(); setPhotoSelected(false) }
+  const handleClear = () => {
+    clearCanvas()
+    setPhotoSelected(false)
+    const state = JSON.stringify(fabricRef.current?.toObject() ?? {})
+    historyRef.current = [state]
+    historyIdxRef.current = 0
+    setCanUndo(false)
+  }
+
+  const handleUndo = async () => {
+    if (historyIdxRef.current <= 0) return
+    historyIdxRef.current--
+    const canvas = fabricRef.current
+    await canvas.loadFromJSON(JSON.parse(historyRef.current[historyIdxRef.current]))
+    canvas.backgroundColor = '#FFFFFF'
+    canvas.getObjects().forEach((obj) => {
+      if (obj.type === 'image') { obj.selectable = false; obj.evented = false }
+    })
+    canvas.renderAll()
+    setCanUndo(historyIdxRef.current > 0)
+    if (canvas.getObjects().length === 0) setPhotoSelected(false)
+  }
 
   const handleModeSwitch = (newMode) => {
     if (newMode === mode) return
     clearCanvas(); setPhotoSelected(false); setIsEraser(false); setMode(newMode)
-    if (fabricRef.current) fabricRef.current.isDrawingMode = newMode === 'draw'
   }
 
-  // 이미지 → Fabric 캔버스 로드 (카메라·갤러리 공용)
+  const handleDrawToolChange = (tool) => {
+    setDrawTool(tool)
+    if (tool !== 'sticker') setIsEraser(false)
+  }
+
+  // ── 이미지 → Fabric 캔버스 ────────────────────
   const loadPhotoToCanvas = async (dataUrl) => {
     const canvas = fabricRef.current
     clearCanvas()
@@ -116,7 +221,7 @@ export default function DrawPage() {
     }
   }
 
-  // ── 카메라 (WebRTC — 페이지 이탈 없음) ──────
+  // ── 카메라 (WebRTC) ───────────────────────────
   const openCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -139,12 +244,11 @@ export default function DrawPage() {
     const c = document.createElement('canvas')
     c.width = video.videoWidth; c.height = video.videoHeight
     c.getContext('2d').drawImage(video, 0, 0)
-    const dataUrl = c.toDataURL('image/jpeg', 0.9)
     closeCamera()
-    loadPhotoToCanvas(dataUrl)
+    loadPhotoToCanvas(c.toDataURL('image/jpeg', 0.9))
   }
 
-  // ── 갤러리 (file input) ───────────────────────
+  // ── 갤러리 ────────────────────────────────────
   const handleGallerySelect = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -169,7 +273,6 @@ export default function DrawPage() {
       const authHeader = `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
 
       if (mode === 'draw') {
-        // ── 그림 모드: GPT-4o 묘사 → DALL-E 3 생성 (기존 방식 유지) ──
         const b64 = canvas.toDataURL({ format: 'jpeg', quality: 0.9 }).split(',')[1]
         const headers = { 'Content-Type': 'application/json', 'Authorization': authHeader }
 
@@ -203,11 +306,9 @@ export default function DrawPage() {
         setTransformedImg(`data:image/png;base64,${b64img}`)
 
       } else {
-        // ── 사진 모드: gpt-image-1 edit (image-to-image, 형태 보존) ──
         const pngDataUrl = canvas.toDataURL({ format: 'png' })
         const pngBlob = await fetch(pngDataUrl).then((r) => r.blob())
         const file = new File([pngBlob], 'photo.png', { type: 'image/png' })
-
         const formData = new FormData()
         formData.append('image', file)
         formData.append('prompt', style.photoPrompt)
@@ -222,7 +323,6 @@ export default function DrawPage() {
         })
         const editData = await editRes.json()
         if (!editRes.ok) throw new Error(editData.error?.message ?? `HTTP ${editRes.status}`)
-
         const b64img = editData.data?.[0]?.b64_json
         const imgUrl = editData.data?.[0]?.url
         if (b64img) setTransformedImg(`data:image/png;base64,${b64img}`)
@@ -327,7 +427,12 @@ export default function DrawPage() {
       <header className={styles.header}>
         <button className={styles.backBtn} onClick={() => navigate('/home')}>← 홈</button>
         <h1 className={styles.title}>오늘의 그림</h1>
-        <button className={styles.clearBtn} onClick={handleClear}>지우기</button>
+        <div className={styles.headerActions}>
+          {mode === 'draw' && (
+            <button className={styles.undoBtn} onClick={handleUndo} disabled={!canUndo} title="실행취소">↩️</button>
+          )}
+          <button className={styles.clearBtn} onClick={handleClear}>지우기</button>
+        </div>
       </header>
 
       {/* 모드 탭 */}
@@ -346,7 +451,7 @@ export default function DrawPage() {
         onChange={handleGallerySelect}
       />
 
-      {/* 사진 선택 UI — canvas 위가 아닌 별도 영역 (Fabric.js upper-canvas 간섭 방지) */}
+      {/* 사진 선택 UI */}
       {mode === 'photo' && !photoSelected && (
         <div className={styles.photoPickerArea}>
           <span className={styles.photoIcon}>📸</span>
@@ -358,7 +463,7 @@ export default function DrawPage() {
         </div>
       )}
 
-      {/* 캔버스 — 항상 DOM에 유지, 사진 미선택 시 높이 0으로 숨김 */}
+      {/* 캔버스 */}
       <div
         className={styles.canvasWrap}
         style={mode === 'photo' && !photoSelected ? { height: 0, overflow: 'hidden', marginBottom: 0 } : {}}
@@ -366,7 +471,7 @@ export default function DrawPage() {
         <canvas ref={canvasEl} />
       </div>
 
-      {/* 사진 선택 완료 후 변경 버튼 */}
+      {/* 사진 변경 버튼 */}
       {mode === 'photo' && photoSelected && (
         <div className={styles.photoButtons}>
           <button className={styles.changePhotoBtn} onClick={openCamera}>📷 다시 찍기</button>
@@ -374,24 +479,52 @@ export default function DrawPage() {
         </div>
       )}
 
-      {/* 그리기 모드 도구 */}
+      {/* 그리기 도구 */}
       {mode === 'draw' && (
         <>
-          <div className={styles.palette}>
-            {COLORS.map((c) => (
-              <button key={c} className={`${styles.colorDot} ${!isEraser && color === c ? styles.active : ''}`}
-                style={{ background: c, border: c === '#FFFFFF' ? '2px solid #ddd' : 'none' }}
-                onClick={() => { setColor(c); setIsEraser(false) }} />
-            ))}
-            <button className={`${styles.eraserBtn} ${isEraser ? styles.active : ''}`} onClick={() => setIsEraser((v) => !v)} title="지우개">⬜</button>
-          </div>
-          <div className={styles.sizes}>
-            {SIZES.map((s) => (
-              <button key={s} className={`${styles.sizeBtn} ${size === s ? styles.active : ''}`} onClick={() => setSize(s)}>
-                <span style={{ width: s, height: s, borderRadius: '50%', background: '#1A1A2E', display: 'inline-block' }} />
-              </button>
+          {/* 툴 선택 */}
+          <div className={styles.toolTabs}>
+            {TOOLS.map((t) => (
+              <button key={t.key}
+                className={`${styles.toolTab} ${drawTool === t.key ? styles.toolTabActive : ''}`}
+                onClick={() => handleDrawToolChange(t.key)}>{t.label}</button>
             ))}
           </div>
+
+          {/* 스티커 선택 */}
+          {drawTool === 'sticker' && (
+            <div className={styles.stickerRow}>
+              {STICKERS.map((s) => (
+                <button key={s}
+                  className={`${styles.stickerBtn} ${selectedSticker === s ? styles.stickerBtnActive : ''}`}
+                  onClick={() => setSelectedSticker(s)}>{s}</button>
+              ))}
+            </div>
+          )}
+
+          {/* 색상 팔레트 */}
+          {drawTool !== 'sticker' && (
+            <div className={styles.palette}>
+              {COLORS.map((c) => (
+                <button key={c} className={`${styles.colorDot} ${!isEraser && color === c ? styles.active : ''}`}
+                  style={{ background: c, border: c === '#FFFFFF' ? '2px solid #ddd' : 'none' }}
+                  onClick={() => { setColor(c); setIsEraser(false) }} />
+              ))}
+              <button className={`${styles.eraserBtn} ${isEraser ? styles.active : ''}`}
+                onClick={() => setIsEraser((v) => !v)} title="지우개">⬜</button>
+            </div>
+          )}
+
+          {/* 굵기 */}
+          {drawTool !== 'sticker' && (
+            <div className={styles.sizes}>
+              {SIZES.map((s) => (
+                <button key={s} className={`${styles.sizeBtn} ${size === s ? styles.active : ''}`} onClick={() => setSize(s)}>
+                  <span style={{ width: s, height: s, borderRadius: '50%', background: '#1A1A2E', display: 'inline-block' }} />
+                </button>
+              ))}
+            </div>
+          )}
         </>
       )}
 
@@ -405,7 +538,7 @@ export default function DrawPage() {
         {loading ? '동화 만드는 중... ✨' : '🪄 동화로 만들기!'}
       </button>
 
-      {/* 카메라 모달 (WebRTC) */}
+      {/* 카메라 모달 */}
       {showCamera && (
         <div className={styles.cameraModal}>
           <video ref={videoRef} autoPlay playsInline muted className={styles.cameraVideo} />
