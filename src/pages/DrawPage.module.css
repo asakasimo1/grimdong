@@ -200,6 +200,50 @@
 .genBtn:hover:not(:disabled) { transform: translateY(-2px); }
 .genBtn:disabled { opacity: 0.7; cursor: not-allowed; }
 
+/* 카메라 모달 */
+.cameraModal {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  z-index: 200;
+}
+
+.cameraVideo {
+  flex: 1;
+  width: 100%;
+  object-fit: cover;
+}
+
+.cameraActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 40px;
+  background: #000;
+}
+
+.cameraCancelBtn {
+  color: #fff;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  padding: 10px 20px;
+}
+
+.cameraShutterBtn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fff;
+  border: 4px solid rgba(255,255,255,0.5);
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* 변환 모달 */
 .modalBackdrop {
   position: fixed;

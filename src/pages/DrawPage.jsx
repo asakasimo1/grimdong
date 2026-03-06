@@ -17,17 +17,21 @@ const TRANSFORM_STYLES = [
 ]
 
 export default function DrawPage() {
-  const navigate    = useNavigate()
-  const canvasEl    = useRef(null)
-  const fabricRef   = useRef(null)
-  const user        = useAuthStore((s) => s.user)
+  const navigate      = useNavigate()
+  const canvasEl      = useRef(null)
+  const fabricRef     = useRef(null)
+  const videoRef      = useRef(null)
+  const galleryRef    = useRef(null)
+  const user          = useAuthStore((s) => s.user)
+
   const [color, setColor]   = useState('#E74C3C')
   const [size, setSize]     = useState(8)
   const [isEraser, setIsEraser] = useState(false)
   const [loading, setLoading]   = useState(false)
-  const [mode, setMode]         = useState('draw') // 'draw' | 'photo'
+  const [mode, setMode]         = useState('draw')
   const [photoSelected, setPhotoSelected] = useState(false)
-  const photoInputRef = useRef(null)
+  const [showCamera, setShowCamera]       = useState(false)
+  const [cameraStream, setCameraStream]   = useState(null)
   const [showTransform, setShowTransform]   = useState(false)
   const [transformStyle, setTransformStyle] = useState('동화')
   const [transforming, setTransforming]     = useState(false)
@@ -35,8 +39,7 @@ export default function DrawPage() {
 
   // Fabric.js 초기화
   useEffect(() => {
-    if (fabricRef.current) return   // StrictMode 이중 실행 방지
-
+    if (fabricRef.current) return
     const canvas = new Canvas(canvasEl.current, {
       isDrawingMode: true,
       backgroundColor: '#FFFFFF',
@@ -48,11 +51,7 @@ export default function DrawPage() {
     brush.width = size
     canvas.freeDrawingBrush = brush
     fabricRef.current = canvas
-
-    return () => {
-      canvas.dispose()
-      fabricRef.current = null
-    }
+    return () => { canvas.dispose(); fabricRef.current = null }
   }, [])
 
   // 색상·굵기 반영
@@ -63,53 +62,82 @@ export default function DrawPage() {
     c.freeDrawingBrush.width = isEraser ? size * 2.5 : size
   }, [color, size, isEraser])
 
+  // 카메라 스트림 video 연결
+  useEffect(() => {
+    if (showCamera && cameraStream && videoRef.current) {
+      videoRef.current.srcObject = cameraStream
+    }
+  }, [showCamera, cameraStream])
+
+  // ── 캔버스 공통 ──────────────────────────────
   const clearCanvas = () => {
     const c = fabricRef.current
     if (!c) return
-    c.clear()
-    c.backgroundColor = '#FFFFFF'
-    c.renderAll()
+    c.clear(); c.backgroundColor = '#FFFFFF'; c.renderAll()
   }
 
-  const handleClear = () => {
-    clearCanvas()
-    setPhotoSelected(false)
-  }
+  const handleClear = () => { clearCanvas(); setPhotoSelected(false) }
 
   const handleModeSwitch = (newMode) => {
     if (newMode === mode) return
+    clearCanvas(); setPhotoSelected(false); setIsEraser(false); setMode(newMode)
+    if (fabricRef.current) fabricRef.current.isDrawingMode = newMode === 'draw'
+  }
+
+  // 이미지 → Fabric 캔버스 로드 (카메라·갤러리 공용)
+  const loadPhotoToCanvas = async (dataUrl) => {
+    const canvas = fabricRef.current
     clearCanvas()
-    setPhotoSelected(false)
-    setIsEraser(false)
-    setMode(newMode)
-    if (fabricRef.current) {
-      fabricRef.current.isDrawingMode = newMode === 'draw'
+    try {
+      const img = await FabricImage.fromURL(dataUrl)
+      const scale = Math.min(canvas.getWidth() / img.width, canvas.getHeight() / img.height)
+      img.set({ scaleX: scale, scaleY: scale, selectable: false, evented: false })
+      canvas.add(img); canvas.centerObject(img); canvas.renderAll()
+      setPhotoSelected(true)
+    } catch {
+      toast.error('사진을 불러오지 못했어요.')
     }
   }
 
-  const handlePhotoSelect = async (e) => {
+  // ── 카메라 (WebRTC — 페이지 이탈 없음) ──────
+  const openCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+      })
+      setCameraStream(stream)
+      setShowCamera(true)
+    } catch {
+      toast.error('카메라 권한을 허용해주세요.')
+    }
+  }
+
+  const closeCamera = () => {
+    cameraStream?.getTracks().forEach((t) => t.stop())
+    setCameraStream(null); setShowCamera(false)
+  }
+
+  const capturePhoto = () => {
+    const video = videoRef.current
+    const c = document.createElement('canvas')
+    c.width = video.videoWidth; c.height = video.videoHeight
+    c.getContext('2d').drawImage(video, 0, 0)
+    const dataUrl = c.toDataURL('image/jpeg', 0.9)
+    closeCamera()
+    loadPhotoToCanvas(dataUrl)
+  }
+
+  // ── 갤러리 (file input) ───────────────────────
+  const handleGallerySelect = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = async (ev) => {
-      const canvas = fabricRef.current
-      clearCanvas()
-      try {
-        const img = await FabricImage.fromURL(ev.target.result)
-        const scale = Math.min(canvas.getWidth() / img.width, canvas.getHeight() / img.height)
-        img.set({ scaleX: scale, scaleY: scale, selectable: false, evented: false })
-        canvas.add(img)
-        canvas.centerObject(img)
-        canvas.renderAll()
-        setPhotoSelected(true)
-      } catch {
-        toast.error('사진을 불러오지 못했어요.')
-      }
-    }
+    reader.onload = (ev) => loadPhotoToCanvas(ev.target.result)
     reader.readAsDataURL(file)
     e.target.value = ''
   }
 
+  // ── AI 변환 ──────────────────────────────────
   const handleTransform = async () => {
     const canvas = fabricRef.current
     if (mode === 'draw' && (!canvas || canvas.getObjects().length === 0)) {
@@ -128,10 +156,8 @@ export default function DrawPage() {
         'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
       }
 
-      // Step 1: GPT-4o Vision으로 그림 내용 묘사
       const visionRes = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: openaiHeaders,
+        method: 'POST', headers: openaiHeaders,
         body: JSON.stringify({
           model: 'gpt-4o',
           messages: [{ role: 'user', content: [
@@ -145,22 +171,16 @@ export default function DrawPage() {
       const description = visionData.choices?.[0]?.message?.content ?? ''
       if (!description) throw new Error('그림 묘사 실패')
 
-      // Step 2: DALL-E 3로 스타일 변환 이미지 생성
       const dalleRes = await fetch('https://api.openai.com/v1/images/generations', {
-        method: 'POST',
-        headers: openaiHeaders,
+        method: 'POST', headers: openaiHeaders,
         body: JSON.stringify({
           model: 'dall-e-3',
           prompt: `${style.prompt} ${description}. Child-friendly, safe for kids.`,
-          size: '1024x1024',
-          quality: 'standard',
-          n: 1,
-          response_format: 'b64_json',
+          size: '1024x1024', quality: 'standard', n: 1, response_format: 'b64_json',
         }),
       })
       const dalleData = await dalleRes.json()
       if (!dalleRes.ok) throw new Error(dalleData.error?.message ?? `HTTP ${dalleRes.status}`)
-
       const b64img = dalleData.data?.[0]?.b64_json
       if (!b64img) throw new Error('이미지 생성 실패')
       setTransformedImg(`data:image/png;base64,${b64img}`)
@@ -174,55 +194,42 @@ export default function DrawPage() {
 
   const handleUseTransformed = async () => {
     const img = transformedImg
-    setShowTransform(false)
-    setTransformedImg(null)
-
-    // PNG(1024x1024) → JPEG 압축 변환 (크기 축소 + mime type 통일)
+    setShowTransform(false); setTransformedImg(null)
     const compressed = await new Promise((resolve) => {
       const image = new Image()
       image.onload = () => {
         const c = document.createElement('canvas')
         c.width = 800; c.height = 800
         const ctx = c.getContext('2d')
-        ctx.fillStyle = '#FFFFFF'
-        ctx.fillRect(0, 0, 800, 800)
+        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, 800, 800)
         const scale = Math.min(800 / image.width, 800 / image.height)
-        const w = image.width * scale
-        const h = image.height * scale
-        ctx.drawImage(image, (800 - w) / 2, (800 - h) / 2, w, h)
+        ctx.drawImage(image, (800 - image.width * scale) / 2, (800 - image.height * scale) / 2, image.width * scale, image.height * scale)
         resolve(c.toDataURL('image/jpeg', 0.85))
       }
       image.src = img
     })
-
     handleGenerate(compressed)
   }
 
+  // ── 동화 생성 ─────────────────────────────────
   const handleGenerate = async (overrideDataUrl = null) => {
     const canvas = fabricRef.current
     if (!overrideDataUrl) {
       if (mode === 'draw' && (!canvas || canvas.getObjects().length === 0)) {
-        toast.error('그림을 먼저 그려주세요! 🖍️')
-        return
+        toast.error('그림을 먼저 그려주세요! 🖍️'); return
       }
       if (mode === 'photo' && !photoSelected) {
-        toast.error('사진을 먼저 선택해주세요! 📷')
-        return
+        toast.error('사진을 먼저 선택해주세요! 📷'); return
       }
     }
     setLoading(true)
     try {
-      // 캔버스 → base64
       const dataUrl = overrideDataUrl ?? canvas.toDataURL({ format: 'jpeg', quality: 0.85 })
       const b64 = dataUrl.split(',')[1]
 
-      // AI 스토리 생성
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}` },
         body: JSON.stringify({
           model: 'gpt-4o',
           response_format: { type: 'json_object' },
@@ -242,45 +249,25 @@ export default function DrawPage() {
               { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'low' } },
             ]},
           ],
-          max_tokens: 600,
-          temperature: 0.85,
+          max_tokens: 600, temperature: 0.85,
         }),
       })
-
       const data = await res.json()
-      const raw  = data.choices?.[0]?.message?.content ?? ''
-      const story = JSON.parse(raw)
+      const story = JSON.parse(data.choices?.[0]?.message?.content ?? '')
 
-      // 이미지 → Blob 변환 후 Supabase Storage 업로드
       const blob = await fetch(dataUrl).then((r) => r.blob())
       const fileName = `${user.id}/${Date.now()}.jpg`
-      const { error: uploadError } = await supabase.storage
-        .from('drawings')
-        .upload(fileName, blob, { contentType: 'image/jpeg' })
+      const { error: uploadError } = await supabase.storage.from('drawings').upload(fileName, blob, { contentType: 'image/jpeg' })
       if (uploadError) throw uploadError
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('drawings')
-        .getPublicUrl(fileName)
+      const { data: { publicUrl } } = supabase.storage.from('drawings').getPublicUrl(fileName)
 
-      // Supabase stories 테이블에 저장
-      const { data: saved, error: insertError } = await supabase
-        .from('stories')
-        .insert({
-          user_id:    user.id,
-          title:      story.title,
-          story:      story.story,
-          emotion:    story.emotion,
-          keywords:   story.keywords,
-          char_count: story.char_count,
-          image_url:  publicUrl,
-        })
-        .select('id')
-        .single()
+      const { data: saved, error: insertError } = await supabase.from('stories')
+        .insert({ user_id: user.id, title: story.title, story: story.story, emotion: story.emotion, keywords: story.keywords, char_count: story.char_count, image_url: publicUrl })
+        .select('id').single()
       if (insertError) throw insertError
 
       navigate(`/story/${saved.id}`)
-
     } catch (err) {
       console.error('[동화 생성 에러]', err)
       toast.error(`동화 생성 실패: ${err.message}`)
@@ -289,6 +276,7 @@ export default function DrawPage() {
     }
   }
 
+  // ── 렌더 ─────────────────────────────────────
   return (
     <div className={styles.wrap}>
       <header className={styles.header}>
@@ -299,14 +287,8 @@ export default function DrawPage() {
 
       {/* 모드 탭 */}
       <div className={styles.modeTabs}>
-        <button
-          className={`${styles.modeTab} ${mode === 'draw' ? styles.modeTabActive : ''}`}
-          onClick={() => handleModeSwitch('draw')}
-        >✏️ 직접 그리기</button>
-        <button
-          className={`${styles.modeTab} ${mode === 'photo' ? styles.modeTabActive : ''}`}
-          onClick={() => handleModeSwitch('photo')}
-        >📷 사진으로 찍기</button>
+        <button className={`${styles.modeTab} ${mode === 'draw' ? styles.modeTabActive : ''}`} onClick={() => handleModeSwitch('draw')}>✏️ 직접 그리기</button>
+        <button className={`${styles.modeTab} ${mode === 'photo' ? styles.modeTabActive : ''}`} onClick={() => handleModeSwitch('photo')}>📷 사진 불러오기</button>
       </div>
 
       {/* 캔버스 */}
@@ -314,67 +296,50 @@ export default function DrawPage() {
         {mode === 'photo' && !photoSelected && (
           <div className={styles.photoOverlay}>
             <span className={styles.photoIcon}>📸</span>
-            <p>아래 버튼으로 사진을 선택해주세요</p>
+            <p>카메라로 찍거나 갤러리에서 선택해주세요</p>
           </div>
         )}
         <canvas ref={canvasEl} />
       </div>
 
-      {/* 사진 모드 전용 — label 방식으로 iOS 프로그래매틱 클릭 문제 해결 */}
+      {/* 사진 모드 버튼 */}
       {mode === 'photo' && (
         <>
-          <input
-            id="photoFileInput"
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handlePhotoSelect}
-          />
+          {/* 갤러리 전용 hidden input */}
+          <input ref={galleryRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleGallerySelect} />
+
           {!photoSelected ? (
             <div className={styles.photoButtons}>
-              <label htmlFor="photoFileInput" className={styles.photoPickBtn}>
+              <button className={styles.photoPickBtn} onClick={openCamera}>
                 📷 카메라로 찍기
-              </label>
-              <label htmlFor="photoFileInput" className={styles.photoPickBtn}>
+              </button>
+              <button className={styles.photoPickBtn} onClick={() => galleryRef.current?.click()}>
                 🖼️ 갤러리에서 선택
-              </label>
+              </button>
             </div>
           ) : (
             <div className={styles.photoButtons}>
-              <label htmlFor="photoFileInput" className={styles.changePhotoBtn}>
-                🔄 다른 사진 선택
-              </label>
+              <button className={styles.changePhotoBtn} onClick={openCamera}>📷 다시 찍기</button>
+              <button className={styles.changePhotoBtn} onClick={() => galleryRef.current?.click()}>🖼️ 다른 사진</button>
             </div>
           )}
         </>
       )}
 
-      {/* 그리기 모드 전용 도구 */}
+      {/* 그리기 모드 도구 */}
       {mode === 'draw' && (
         <>
           <div className={styles.palette}>
             {COLORS.map((c) => (
-              <button
-                key={c}
-                className={`${styles.colorDot} ${!isEraser && color === c ? styles.active : ''}`}
+              <button key={c} className={`${styles.colorDot} ${!isEraser && color === c ? styles.active : ''}`}
                 style={{ background: c, border: c === '#FFFFFF' ? '2px solid #ddd' : 'none' }}
-                onClick={() => { setColor(c); setIsEraser(false) }}
-              />
+                onClick={() => { setColor(c); setIsEraser(false) }} />
             ))}
-            <button
-              className={`${styles.eraserBtn} ${isEraser ? styles.active : ''}`}
-              onClick={() => setIsEraser((v) => !v)}
-              title="지우개"
-            >⬜</button>
+            <button className={`${styles.eraserBtn} ${isEraser ? styles.active : ''}`} onClick={() => setIsEraser((v) => !v)} title="지우개">⬜</button>
           </div>
-
           <div className={styles.sizes}>
             {SIZES.map((s) => (
-              <button
-                key={s}
-                className={`${styles.sizeBtn} ${size === s ? styles.active : ''}`}
-                onClick={() => setSize(s)}
-              >
+              <button key={s} className={`${styles.sizeBtn} ${size === s ? styles.active : ''}`} onClick={() => setSize(s)}>
                 <span style={{ width: s, height: s, borderRadius: '50%', background: '#1A1A2E', display: 'inline-block' }} />
               </button>
             ))}
@@ -382,37 +347,40 @@ export default function DrawPage() {
         </>
       )}
 
-      {/* AI 변환 버튼 */}
-      <button
-        className={styles.transformBtn}
-        onClick={() => setShowTransform(true)}
-        disabled={loading}
-      >
+      {/* AI 변환 */}
+      <button className={styles.transformBtn} onClick={() => setShowTransform(true)} disabled={loading}>
         ✨ AI로 그림 변환하기
       </button>
 
-      {/* 동화 만들기 버튼 */}
+      {/* 동화 만들기 */}
       <button className={styles.genBtn} onClick={() => handleGenerate()} disabled={loading}>
         {loading ? '동화 만드는 중... ✨' : '🪄 동화로 만들기!'}
       </button>
 
-      {/* 변환 모달 */}
+      {/* 카메라 모달 (WebRTC) */}
+      {showCamera && (
+        <div className={styles.cameraModal}>
+          <video ref={videoRef} autoPlay playsInline muted className={styles.cameraVideo} />
+          <div className={styles.cameraActions}>
+            <button className={styles.cameraCancelBtn} onClick={closeCamera}>취소</button>
+            <button className={styles.cameraShutterBtn} onClick={capturePhoto}>📷</button>
+          </div>
+        </div>
+      )}
+
+      {/* AI 변환 모달 */}
       {showTransform && (
         <div className={styles.modalBackdrop} onClick={() => { setShowTransform(false); setTransformedImg(null) }}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <button className={styles.closeBtn} onClick={() => { setShowTransform(false); setTransformedImg(null) }}>✕</button>
             <h2 className={styles.modalTitle}>✨ AI 그림 변환</h2>
-
             {!transformedImg ? (
               <>
                 <p className={styles.modalDesc}>어떤 스타일로 바꿔볼까요?</p>
                 <div className={styles.styleGrid}>
                   {TRANSFORM_STYLES.map((s) => (
-                    <button
-                      key={s.key}
-                      className={`${styles.styleBtn} ${transformStyle === s.key ? styles.styleBtnActive : ''}`}
-                      onClick={() => setTransformStyle(s.key)}
-                    >{s.label}</button>
+                    <button key={s.key} className={`${styles.styleBtn} ${transformStyle === s.key ? styles.styleBtnActive : ''}`}
+                      onClick={() => setTransformStyle(s.key)}>{s.label}</button>
                   ))}
                 </div>
                 <button className={styles.doTransformBtn} onClick={handleTransform} disabled={transforming}>
@@ -423,12 +391,8 @@ export default function DrawPage() {
               <>
                 <img src={transformedImg} alt="변환된 그림" className={styles.transformedImg} />
                 <div className={styles.modalActions}>
-                  <button className={styles.useImgBtn} onClick={handleUseTransformed}>
-                    🪄 이걸로 동화 만들기
-                  </button>
-                  <button className={styles.retryBtn} onClick={() => setTransformedImg(null)}>
-                    🔄 다시 변환
-                  </button>
+                  <button className={styles.useImgBtn} onClick={handleUseTransformed}>🪄 이걸로 동화 만들기</button>
+                  <button className={styles.retryBtn} onClick={() => setTransformedImg(null)}>🔄 다시 변환</button>
                 </div>
               </>
             )}
