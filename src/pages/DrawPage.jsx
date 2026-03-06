@@ -291,39 +291,41 @@ export default function DrawPage() {
         <button className={`${styles.modeTab} ${mode === 'photo' ? styles.modeTabActive : ''}`} onClick={() => handleModeSwitch('photo')}>📷 사진 불러오기</button>
       </div>
 
+      {/* 갤러리 hidden input — 항상 DOM에 존재 */}
+      <input
+        id="galleryFileInput"
+        ref={galleryRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleGallerySelect}
+      />
+
       {/* 캔버스 */}
       <div className={styles.canvasWrap}>
         {mode === 'photo' && !photoSelected && (
           <div className={styles.photoOverlay}>
             <span className={styles.photoIcon}>📸</span>
-            <p>카메라로 찍거나 갤러리에서 선택해주세요</p>
+            <p>사진을 선택해주세요</p>
+            <div className={styles.overlayButtons}>
+              <button className={styles.overlayBtn} onClick={openCamera}>
+                📷 카메라
+              </button>
+              <label htmlFor="galleryFileInput" className={styles.overlayBtn}>
+                🖼️ 갤러리
+              </label>
+            </div>
           </div>
         )}
         <canvas ref={canvasEl} />
       </div>
 
-      {/* 사진 모드 버튼 */}
-      {mode === 'photo' && (
-        <>
-          {/* 갤러리 전용 hidden input */}
-          <input ref={galleryRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleGallerySelect} />
-
-          {!photoSelected ? (
-            <div className={styles.photoButtons}>
-              <button className={styles.photoPickBtn} onClick={openCamera}>
-                📷 카메라로 찍기
-              </button>
-              <button className={styles.photoPickBtn} onClick={() => galleryRef.current?.click()}>
-                🖼️ 갤러리에서 선택
-              </button>
-            </div>
-          ) : (
-            <div className={styles.photoButtons}>
-              <button className={styles.changePhotoBtn} onClick={openCamera}>📷 다시 찍기</button>
-              <button className={styles.changePhotoBtn} onClick={() => galleryRef.current?.click()}>🖼️ 다른 사진</button>
-            </div>
-          )}
-        </>
+      {/* 사진 선택 완료 후 — 변경 버튼만 표시 */}
+      {mode === 'photo' && photoSelected && (
+        <div className={styles.photoButtons}>
+          <button className={styles.changePhotoBtn} onClick={openCamera}>📷 다시 찍기</button>
+          <label htmlFor="galleryFileInput" className={styles.changePhotoBtn}>🖼️ 다른 사진</label>
+        </div>
       )}
 
       {/* 그리기 모드 도구 */}

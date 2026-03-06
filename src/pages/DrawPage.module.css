@@ -87,6 +87,26 @@
   color: var(--color-muted);
 }
 
+.overlayButtons {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.overlayBtn {
+  padding: 12px 20px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-family: var(--font-kr-display);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .photoButtons {
   display: flex;
   gap: 10px;
