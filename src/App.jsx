@@ -9,6 +9,10 @@ import DrawPage      from './pages/DrawPage'
 import StoryPage     from './pages/StoryPage'
 
 function PrivateRoute({ children }) {
+  // [테스트 모드] 인증 우회 — 카카오 로그인 없이 자유 접속
+  return children
+
+  // eslint-disable-next-line no-unreachable
   const { user, loading } = useAuthStore()
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', fontSize:'1.2rem', color:'var(--color-muted)' }}>
@@ -24,7 +28,8 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login"               element={<LoginPage />} />
+      {/* [테스트 모드] 로그인 페이지 → 홈으로 바로 이동 */}
+      <Route path="/login"               element={<Navigate to="/home" replace />} />
       <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
       <Route path="/home"                element={<PrivateRoute><HomePage /></PrivateRoute>} />
       <Route path="/draw"                element={<PrivateRoute><DrawPage /></PrivateRoute>} />
