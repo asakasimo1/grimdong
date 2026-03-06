@@ -405,7 +405,7 @@ export default function DrawPage() {
 ④ "~했어요"체 ⑤ 의성어·의태어 1~2개 ⑥ 대화문 1개 ⑦ 마법 같은 행복한 결말
 ⑧ 폭력·공포·슬픔 금지` },
             { role: 'user', content: [
-              { type: 'text', text: '이 그림을 보고 동화를 만들어주세요. 주인공: 친구, 오늘의 주제: 오늘의 이야기' },
+              { type: 'text', text: '이 그림을 보고 동화를 만들어주세요. 주인공: 수아, 오늘의 주제: 오늘의 이야기' },
               { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'low' } },
             ]},
           ],
@@ -565,23 +565,23 @@ export default function DrawPage() {
       )}
 
       {/* 로딩 오버레이 */}
-      {(loading || transforming) && (() => {
-        const msgs = loading ? STORY_MESSAGES : TRANSFORM_MESSAGES
-        const cur = msgs[msgIdx]
-        return (
-          <div className={styles.loadingOverlay}>
-            <div className={styles.loadingCard}>
-              <div className={styles.loadingIconWrap}>
-                <span key={msgIdx} className={styles.loadingIcon}>{cur.icon}</span>
-              </div>
-              <div className={styles.loadingDots}>
-                <span /><span /><span />
-              </div>
-              <p key={`txt-${msgIdx}`} className={styles.loadingText}>{cur.text}</p>
+      {(loading || transforming) && (
+        <div className={styles.loadingOverlay}>
+          <div className={styles.loadingCard}>
+            <div className={styles.loadingIconWrap}>
+              <span key={msgIdx} className={styles.loadingIcon}>
+                {(loading ? STORY_MESSAGES : TRANSFORM_MESSAGES)[msgIdx].icon}
+              </span>
             </div>
+            <div className={styles.loadingDots}>
+              <span /><span /><span />
+            </div>
+            <p key={`txt-${msgIdx}`} className={styles.loadingText}>
+              {(loading ? STORY_MESSAGES : TRANSFORM_MESSAGES)[msgIdx].text}
+            </p>
           </div>
-        )
-      })()}
+        </div>
+      )}
 
       {/* AI 변환 모달 */}
       {showTransform && (
