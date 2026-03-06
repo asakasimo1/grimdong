@@ -124,28 +124,39 @@ export default function DrawPage() {
       const dataUrl = canvas.toDataURL({ format: 'jpeg', quality: 0.9 })
       const b64 = dataUrl.split(',')[1]
       const style = TRANSFORM_STYLES.find((s) => s.key === transformStyle)
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+      if (!apiKey) throw new Error('API 키 없음: VITE_GEMINI_API_KEY 미설정')
+
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [
               { text: style.prompt },
-              { inlineData: { mimeType: 'image/jpeg', data: b64 } },
+              { inline_data: { mime_type: 'image/jpeg', data: b64 } },
             ]}],
             generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
           }),
         }
       )
       const data = await res.json()
+      console.log('[Gemini 응답]', JSON.stringify(data).slice(0, 500))
+
+      if (!res.ok) {
+        const msg = data.error?.message ?? `HTTP ${res.status}`
+        throw new Error(msg)
+      }
+
       const parts = data.candidates?.[0]?.content?.parts ?? []
-      const imgPart = parts.find((p) => p.inlineData)
-      if (!imgPart) throw new Error('이미지 없음')
-      setTransformedImg(`data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`)
+      const imgPart = parts.find((p) => p.inlineData ?? p.inline_data)
+      if (!imgPart) throw new Error(`이미지 파트 없음. 응답: ${JSON.stringify(parts).slice(0,200)}`)
+      const id = imgPart.inlineData ?? imgPart.inline_data
+      setTransformedImg(`data:${id.mimeType ?? id.mime_type};base64,${id.data}`)
     } catch (err) {
-      console.error(err)
-      toast.error('변환에 실패했어요. 다시 시도해 주세요.')
+      console.error('[Gemini 에러]', err)
+      toast.error(`변환 실패: ${err.message}`)
     } finally {
       setTransforming(false)
     }
