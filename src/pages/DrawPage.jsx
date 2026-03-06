@@ -173,11 +173,30 @@ export default function DrawPage() {
     }
   }
 
-  const handleUseTransformed = () => {
+  const handleUseTransformed = async () => {
     const img = transformedImg
     setShowTransform(false)
     setTransformedImg(null)
-    handleGenerate(img)
+
+    // PNG(1024x1024) → JPEG 압축 변환 (크기 축소 + mime type 통일)
+    const compressed = await new Promise((resolve) => {
+      const image = new Image()
+      image.onload = () => {
+        const c = document.createElement('canvas')
+        c.width = 800; c.height = 800
+        const ctx = c.getContext('2d')
+        ctx.fillStyle = '#FFFFFF'
+        ctx.fillRect(0, 0, 800, 800)
+        const scale = Math.min(800 / image.width, 800 / image.height)
+        const w = image.width * scale
+        const h = image.height * scale
+        ctx.drawImage(image, (800 - w) / 2, (800 - h) / 2, w, h)
+        resolve(c.toDataURL('image/jpeg', 0.85))
+      }
+      image.src = img
+    })
+
+    handleGenerate(compressed)
   }
 
   const handleGenerate = async (overrideDataUrl = null) => {
@@ -264,8 +283,8 @@ export default function DrawPage() {
       navigate(`/story/${saved.id}`)
 
     } catch (err) {
-      console.error(err)
-      toast.error('동화 생성에 실패했어요. 다시 시도해 주세요.')
+      console.error('[동화 생성 에러]', err)
+      toast.error(`동화 생성 실패: ${err.message}`)
     } finally {
       setLoading(false)
     }
