@@ -291,7 +291,7 @@ export default function DrawPage() {
         <button className={`${styles.modeTab} ${mode === 'photo' ? styles.modeTabActive : ''}`} onClick={() => handleModeSwitch('photo')}>📷 사진 불러오기</button>
       </div>
 
-      {/* 갤러리 hidden input — 항상 DOM에 존재 */}
+      {/* 갤러리 hidden input */}
       <input
         id="galleryFileInput"
         ref={galleryRef}
@@ -301,26 +301,27 @@ export default function DrawPage() {
         onChange={handleGallerySelect}
       />
 
-      {/* 캔버스 */}
-      <div className={styles.canvasWrap}>
-        {mode === 'photo' && !photoSelected && (
-          <div className={styles.photoOverlay}>
-            <span className={styles.photoIcon}>📸</span>
-            <p>사진을 선택해주세요</p>
-            <div className={styles.overlayButtons}>
-              <button className={styles.overlayBtn} onClick={openCamera}>
-                📷 카메라
-              </button>
-              <label htmlFor="galleryFileInput" className={styles.overlayBtn}>
-                🖼️ 갤러리
-              </label>
-            </div>
+      {/* 사진 선택 UI — canvas 위가 아닌 별도 영역 (Fabric.js upper-canvas 간섭 방지) */}
+      {mode === 'photo' && !photoSelected && (
+        <div className={styles.photoPickerArea}>
+          <span className={styles.photoIcon}>📸</span>
+          <p className={styles.photoPickerText}>사진을 선택해주세요</p>
+          <div className={styles.overlayButtons}>
+            <button className={styles.overlayBtn} onClick={openCamera}>📷 카메라</button>
+            <label htmlFor="galleryFileInput" className={styles.overlayBtn}>🖼️ 갤러리</label>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* 캔버스 — 항상 DOM에 유지, 사진 미선택 시 높이 0으로 숨김 */}
+      <div
+        className={styles.canvasWrap}
+        style={mode === 'photo' && !photoSelected ? { height: 0, overflow: 'hidden', marginBottom: 0 } : {}}
+      >
         <canvas ref={canvasEl} />
       </div>
 
-      {/* 사진 선택 완료 후 — 변경 버튼만 표시 */}
+      {/* 사진 선택 완료 후 변경 버튼 */}
       {mode === 'photo' && photoSelected && (
         <div className={styles.photoButtons}>
           <button className={styles.changePhotoBtn} onClick={openCamera}>📷 다시 찍기</button>

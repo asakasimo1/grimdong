@@ -67,30 +67,31 @@
   touch-action: none;
 }
 
-.photoOverlay {
-  position: absolute;
-  inset: 0;
+.photoPickerArea {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 480px;
+  border-radius: 20px;
+  background: #fafafa;
+  border: 2px dashed var(--color-border);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #fafafa;
-  cursor: pointer;
-  gap: 10px;
-  z-index: 10;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-.photoIcon { font-size: 3rem; }
-
-.photoOverlay p {
+.photoPickerText {
   font-size: 0.95rem;
   color: var(--color-muted);
 }
 
+.photoIcon { font-size: 3rem; }
+
 .overlayButtons {
   display: flex;
   gap: 12px;
-  margin-top: 4px;
 }
 
 .overlayBtn {
@@ -102,9 +103,6 @@
   font-size: 0.95rem;
   font-family: var(--font-kr-display);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .photoButtons {
