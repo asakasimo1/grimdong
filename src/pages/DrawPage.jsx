@@ -17,6 +17,21 @@ const TOOLS = [
   { key: 'sticker', label: '⭐ 스티커' },
 ]
 
+const STORY_MESSAGES = [
+  { icon: '🖍️', text: '그림을 살펴보고 있어요...' },
+  { icon: '✨', text: '주인공을 떠올리는 중...' },
+  { icon: '📖', text: '동화를 써내려가고 있어요...' },
+  { icon: '🌈', text: '마법을 걸고 있어요...' },
+  { icon: '🎉', text: '거의 다 됐어요!' },
+]
+
+const TRANSFORM_MESSAGES = [
+  { icon: '🎨', text: 'AI가 그림을 보고 있어요...' },
+  { icon: '✨', text: '마법 붓으로 칠하는 중...' },
+  { icon: '🌟', text: '스타일을 입히고 있어요...' },
+  { icon: '🎭', text: '거의 다 됐어요!' },
+]
+
 const TRANSFORM_STYLES = [
   {
     key: '지브리', label: '🏯 지브리 스타일',
@@ -67,6 +82,7 @@ export default function DrawPage() {
   const [drawTool, setDrawTool]             = useState('pencil')
   const [selectedSticker, setSelectedSticker] = useState('⭐')
   const [canUndo, setCanUndo]               = useState(false)
+  const [msgIdx, setMsgIdx]                 = useState(0)
 
   // Fabric.js 초기화
   useEffect(() => {
@@ -154,6 +170,14 @@ export default function DrawPage() {
     }
     canvas.freeDrawingBrush = brush
   }, [mode, drawTool, color, size, isEraser])
+
+  // 로딩 메시지 순환
+  useEffect(() => {
+    if (!loading && !transforming) { setMsgIdx(0); return }
+    const msgs = loading ? STORY_MESSAGES : TRANSFORM_MESSAGES
+    const timer = setInterval(() => setMsgIdx((i) => (i + 1) % msgs.length), 2500)
+    return () => clearInterval(timer)
+  }, [loading, transforming])
 
   // ref 동기화 (canvas 이벤트 핸들러용)
   useEffect(() => { drawToolRef.current = drawTool }, [drawTool])
@@ -539,6 +563,25 @@ export default function DrawPage() {
           </div>
         </div>
       )}
+
+      {/* 로딩 오버레이 */}
+      {(loading || transforming) && (() => {
+        const msgs = loading ? STORY_MESSAGES : TRANSFORM_MESSAGES
+        const cur = msgs[msgIdx]
+        return (
+          <div className={styles.loadingOverlay}>
+            <div className={styles.loadingCard}>
+              <div className={styles.loadingIconWrap}>
+                <span key={msgIdx} className={styles.loadingIcon}>{cur.icon}</span>
+              </div>
+              <div className={styles.loadingDots}>
+                <span /><span /><span />
+              </div>
+              <p key={`txt-${msgIdx}`} className={styles.loadingText}>{cur.text}</p>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* AI 변환 모달 */}
       {showTransform && (
