@@ -10,10 +10,26 @@ const COLORS = ['#E74C3C','#E67E22','#F1C40F','#27AE60','#2980B9','#8E44AD','#1A
 const SIZES  = [4, 8, 14, 22]
 
 const TRANSFORM_STYLES = [
-  { key: '동화', label: '📖 동화책', prompt: 'fairy tale book illustration style, soft magical colors, child-friendly,' },
-  { key: '만화', label: '🎨 귀여운 만화', prompt: 'cute cartoon illustration style, bright cheerful colors, suitable for children,' },
-  { key: '수채화', label: '🖌️ 수채화', prompt: 'delicate watercolor painting style, soft flowing colors,' },
-  { key: '실사', label: '📸 실사 사진', prompt: 'realistic photograph style, colorful and child-friendly,' },
+  {
+    key: '동화', label: '📖 동화책',
+    drawPrompt: 'fairy tale book illustration style, soft magical colors, child-friendly,',
+    photoPrompt: 'Transform this photo into a fairy tale book illustration style. Keep the exact same composition, subjects, and layout. Apply soft magical illustrated colors suitable for children.',
+  },
+  {
+    key: '만화', label: '🎨 귀여운 만화',
+    drawPrompt: 'cute cartoon illustration style, bright cheerful colors, suitable for children,',
+    photoPrompt: 'Transform this photo into a cute cartoon style. Maintain the exact same composition and all subjects. Apply bright cheerful cartoon rendering for children.',
+  },
+  {
+    key: '수채화', label: '🖌️ 수채화',
+    drawPrompt: 'delicate watercolor painting style, soft flowing colors,',
+    photoPrompt: 'Transform this photo into a delicate watercolor painting. Keep the original composition and subjects exactly. Apply soft watercolor textures and flowing colors.',
+  },
+  {
+    key: '스케치', label: '✏️ 스케치',
+    drawPrompt: 'pencil sketch style, black and white, fine line drawing,',
+    photoPrompt: 'Transform this photo into a detailed pencil sketch. Preserve the exact composition and all subjects. Apply fine line drawing with shading.',
+  },
 ]
 
 export default function DrawPage() {
@@ -148,42 +164,70 @@ export default function DrawPage() {
     }
     setTransforming(true)
     try {
-      const dataUrl = canvas.toDataURL({ format: 'jpeg', quality: 0.9 })
-      const b64 = dataUrl.split(',')[1]
       const style = TRANSFORM_STYLES.find((s) => s.key === transformStyle)
-      const openaiHeaders = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
+      const authHeader = `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+
+      if (mode === 'draw') {
+        // ── 그림 모드: GPT-4o 묘사 → DALL-E 3 생성 (기존 방식 유지) ──
+        const b64 = canvas.toDataURL({ format: 'jpeg', quality: 0.9 }).split(',')[1]
+        const headers = { 'Content-Type': 'application/json', 'Authorization': authHeader }
+
+        const visionRes = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST', headers,
+          body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [{ role: 'user', content: [
+              { type: 'text', text: 'Describe this drawing in detail for image generation. Include all subjects, colors, composition, and characters. Be specific. Reply in English only, within 100 words.' },
+              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'low' } },
+            ]}],
+            max_tokens: 200,
+          }),
+        })
+        const visionData = await visionRes.json()
+        const description = visionData.choices?.[0]?.message?.content ?? ''
+        if (!description) throw new Error('그림 묘사 실패')
+
+        const dalleRes = await fetch('https://api.openai.com/v1/images/generations', {
+          method: 'POST', headers,
+          body: JSON.stringify({
+            model: 'dall-e-3',
+            prompt: `${style.drawPrompt} ${description}. Child-friendly, safe for kids.`,
+            size: '1024x1024', quality: 'standard', n: 1, response_format: 'b64_json',
+          }),
+        })
+        const dalleData = await dalleRes.json()
+        if (!dalleRes.ok) throw new Error(dalleData.error?.message ?? `HTTP ${dalleRes.status}`)
+        const b64img = dalleData.data?.[0]?.b64_json
+        if (!b64img) throw new Error('이미지 생성 실패')
+        setTransformedImg(`data:image/png;base64,${b64img}`)
+
+      } else {
+        // ── 사진 모드: gpt-image-1 edit (image-to-image, 형태 보존) ──
+        const pngDataUrl = canvas.toDataURL({ format: 'png' })
+        const pngBlob = await fetch(pngDataUrl).then((r) => r.blob())
+        const file = new File([pngBlob], 'photo.png', { type: 'image/png' })
+
+        const formData = new FormData()
+        formData.append('image', file)
+        formData.append('prompt', style.photoPrompt)
+        formData.append('model', 'gpt-image-1')
+        formData.append('n', '1')
+        formData.append('size', '1024x1024')
+
+        const editRes = await fetch('https://api.openai.com/v1/images/edits', {
+          method: 'POST',
+          headers: { 'Authorization': authHeader },
+          body: formData,
+        })
+        const editData = await editRes.json()
+        if (!editRes.ok) throw new Error(editData.error?.message ?? `HTTP ${editRes.status}`)
+
+        const b64img = editData.data?.[0]?.b64_json
+        const imgUrl = editData.data?.[0]?.url
+        if (b64img) setTransformedImg(`data:image/png;base64,${b64img}`)
+        else if (imgUrl) setTransformedImg(imgUrl)
+        else throw new Error('이미지 없음')
       }
-
-      const visionRes = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST', headers: openaiHeaders,
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: [{ role: 'user', content: [
-            { type: 'text', text: 'Describe this drawing in detail for image generation. Include all subjects, colors, composition, and characters. Be specific. Reply in English only, within 100 words.' },
-            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'low' } },
-          ]}],
-          max_tokens: 200,
-        }),
-      })
-      const visionData = await visionRes.json()
-      const description = visionData.choices?.[0]?.message?.content ?? ''
-      if (!description) throw new Error('그림 묘사 실패')
-
-      const dalleRes = await fetch('https://api.openai.com/v1/images/generations', {
-        method: 'POST', headers: openaiHeaders,
-        body: JSON.stringify({
-          model: 'dall-e-3',
-          prompt: `${style.prompt} ${description}. Child-friendly, safe for kids.`,
-          size: '1024x1024', quality: 'standard', n: 1, response_format: 'b64_json',
-        }),
-      })
-      const dalleData = await dalleRes.json()
-      if (!dalleRes.ok) throw new Error(dalleData.error?.message ?? `HTTP ${dalleRes.status}`)
-      const b64img = dalleData.data?.[0]?.b64_json
-      if (!b64img) throw new Error('이미지 생성 실패')
-      setTransformedImg(`data:image/png;base64,${b64img}`)
     } catch (err) {
       console.error('[변환 에러]', err)
       toast.error(`변환 실패: ${err.message}`)
