@@ -31,7 +31,7 @@ const TRANSFORM_STYLES = [
   {
     key: '스케치', label: '✏️ 스케치',
     drawPrompt: 'elegant pencil sketch portrait style, beautiful and attractive faces, refined fine line drawing, soft shading, professional fashion illustration quality,',
-    photoPrompt: 'Transform this photo into an elegant pencil sketch. Preserve the exact composition and all subjects. Draw faces beautifully with attractive refined features. Apply fine line art with soft shading, fashion illustration quality.',
+    photoPrompt: 'Convert this photo into a realistic pencil sketch. Preserve the exact facial features, identity, and likeness of every person — do not alter, idealize, or beautify any face. Keep all original proportions and composition. Apply only the rendering style: fine pencil lines, natural cross-hatching shading, realistic portrait sketch, as if drawn by hand from the original photo.',
   },
   {
     key: '화보', label: '✨ 화보 스타일',
