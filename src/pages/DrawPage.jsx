@@ -9,6 +9,13 @@ import styles from './DrawPage.module.css'
 const COLORS = ['#E74C3C','#E67E22','#F1C40F','#27AE60','#2980B9','#8E44AD','#1A1A2E','#FFFFFF']
 const SIZES  = [4, 8, 14, 22]
 
+const TRANSFORM_STYLES = [
+  { key: '동화', label: '📖 동화책', prompt: 'Transform this drawing into a beautiful fairy tale book illustration with soft, magical colors suitable for children.' },
+  { key: '만화', label: '🎨 귀여운 만화', prompt: 'Transform this drawing into a cute cartoon illustration with bright, cheerful colors suitable for children.' },
+  { key: '수채화', label: '🖌️ 수채화', prompt: 'Transform this drawing into a delicate watercolor painting with soft, flowing colors.' },
+  { key: '실사', label: '📸 실사 사진', prompt: 'Transform this child\'s drawing into a realistic photograph maintaining the same subjects and composition, colorful and child-friendly.' },
+]
+
 export default function DrawPage() {
   const navigate    = useNavigate()
   const canvasEl    = useRef(null)
@@ -20,7 +27,12 @@ export default function DrawPage() {
   const [loading, setLoading]   = useState(false)
   const [mode, setMode]         = useState('draw') // 'draw' | 'photo'
   const [photoSelected, setPhotoSelected] = useState(false)
-  const photoInputRef = useRef(null)
+  const photoInputRef   = useRef(null)
+  const galleryInputRef = useRef(null)
+  const [showTransform, setShowTransform]   = useState(false)
+  const [transformStyle, setTransformStyle] = useState('동화')
+  const [transforming, setTransforming]     = useState(false)
+  const [transformedImg, setTransformedImg] = useState(null)
 
   // Fabric.js 초기화
   useEffect(() => {
@@ -99,20 +111,69 @@ export default function DrawPage() {
     e.target.value = ''
   }
 
-  const handleGenerate = async () => {
+  const handleTransform = async () => {
     const canvas = fabricRef.current
     if (mode === 'draw' && (!canvas || canvas.getObjects().length === 0)) {
-      toast.error('그림을 먼저 그려주세요! 🖍️')
-      return
+      toast.error('그림을 먼저 그려주세요! 🖍️'); return
     }
     if (mode === 'photo' && !photoSelected) {
-      toast.error('사진을 먼저 선택해주세요! 📷')
-      return
+      toast.error('사진을 먼저 선택해주세요! 📷'); return
+    }
+    setTransforming(true)
+    try {
+      const dataUrl = canvas.toDataURL({ format: 'jpeg', quality: 0.9 })
+      const b64 = dataUrl.split(',')[1]
+      const style = TRANSFORM_STYLES.find((s) => s.key === transformStyle)
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [
+              { text: style.prompt },
+              { inlineData: { mimeType: 'image/jpeg', data: b64 } },
+            ]}],
+            generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+          }),
+        }
+      )
+      const data = await res.json()
+      const parts = data.candidates?.[0]?.content?.parts ?? []
+      const imgPart = parts.find((p) => p.inlineData)
+      if (!imgPart) throw new Error('이미지 없음')
+      setTransformedImg(`data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`)
+    } catch (err) {
+      console.error(err)
+      toast.error('변환에 실패했어요. 다시 시도해 주세요.')
+    } finally {
+      setTransforming(false)
+    }
+  }
+
+  const handleUseTransformed = () => {
+    const img = transformedImg
+    setShowTransform(false)
+    setTransformedImg(null)
+    handleGenerate(img)
+  }
+
+  const handleGenerate = async (overrideDataUrl = null) => {
+    const canvas = fabricRef.current
+    if (!overrideDataUrl) {
+      if (mode === 'draw' && (!canvas || canvas.getObjects().length === 0)) {
+        toast.error('그림을 먼저 그려주세요! 🖍️')
+        return
+      }
+      if (mode === 'photo' && !photoSelected) {
+        toast.error('사진을 먼저 선택해주세요! 📷')
+        return
+      }
     }
     setLoading(true)
     try {
       // 캔버스 → base64
-      const dataUrl = canvas.toDataURL({ format: 'jpeg', quality: 0.85 })
+      const dataUrl = overrideDataUrl ?? canvas.toDataURL({ format: 'jpeg', quality: 0.85 })
       const b64 = dataUrl.split(',')[1]
 
       // AI 스토리 생성
@@ -211,9 +272,9 @@ export default function DrawPage() {
       {/* 캔버스 */}
       <div className={styles.canvasWrap}>
         {mode === 'photo' && !photoSelected && (
-          <div className={styles.photoOverlay} onClick={() => photoInputRef.current?.click()}>
+          <div className={styles.photoOverlay}>
             <span className={styles.photoIcon}>📸</span>
-            <p>사진을 찍거나 선택해주세요</p>
+            <p>아래 버튼으로 사진을 선택해주세요</p>
           </div>
         )}
         <canvas ref={canvasEl} />
@@ -222,17 +283,41 @@ export default function DrawPage() {
       {/* 사진 모드 전용 */}
       {mode === 'photo' && (
         <>
+          {/* 카메라 촬영용 */}
           <input
             ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={handlePhotoSelect}
+          />
+          {/* 갤러리 선택용 */}
+          <input
+            ref={galleryInputRef}
             type="file"
             accept="image/*"
             style={{ display: 'none' }}
             onChange={handlePhotoSelect}
           />
-          {photoSelected && (
-            <button className={styles.changePhotoBtn} onClick={() => photoInputRef.current?.click()}>
-              🔄 다른 사진 선택
-            </button>
+          {!photoSelected ? (
+            <div className={styles.photoButtons}>
+              <button className={styles.photoPickBtn} onClick={() => photoInputRef.current?.click()}>
+                📷 카메라로 찍기
+              </button>
+              <button className={styles.photoPickBtn} onClick={() => galleryInputRef.current?.click()}>
+                🖼️ 갤러리에서 선택
+              </button>
+            </div>
+          ) : (
+            <div className={styles.photoButtons}>
+              <button className={styles.changePhotoBtn} onClick={() => photoInputRef.current?.click()}>
+                📷 다시 찍기
+              </button>
+              <button className={styles.changePhotoBtn} onClick={() => galleryInputRef.current?.click()}>
+                🖼️ 다른 사진 선택
+              </button>
+            </div>
           )}
         </>
       )}
@@ -270,10 +355,59 @@ export default function DrawPage() {
         </>
       )}
 
+      {/* AI 변환 버튼 */}
+      <button
+        className={styles.transformBtn}
+        onClick={() => setShowTransform(true)}
+        disabled={loading}
+      >
+        ✨ AI로 그림 변환하기
+      </button>
+
       {/* 동화 만들기 버튼 */}
-      <button className={styles.genBtn} onClick={handleGenerate} disabled={loading}>
+      <button className={styles.genBtn} onClick={() => handleGenerate()} disabled={loading}>
         {loading ? '동화 만드는 중... ✨' : '🪄 동화로 만들기!'}
       </button>
+
+      {/* 변환 모달 */}
+      {showTransform && (
+        <div className={styles.modalBackdrop} onClick={() => { setShowTransform(false); setTransformedImg(null) }}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.closeBtn} onClick={() => { setShowTransform(false); setTransformedImg(null) }}>✕</button>
+            <h2 className={styles.modalTitle}>✨ AI 그림 변환</h2>
+
+            {!transformedImg ? (
+              <>
+                <p className={styles.modalDesc}>어떤 스타일로 바꿔볼까요?</p>
+                <div className={styles.styleGrid}>
+                  {TRANSFORM_STYLES.map((s) => (
+                    <button
+                      key={s.key}
+                      className={`${styles.styleBtn} ${transformStyle === s.key ? styles.styleBtnActive : ''}`}
+                      onClick={() => setTransformStyle(s.key)}
+                    >{s.label}</button>
+                  ))}
+                </div>
+                <button className={styles.doTransformBtn} onClick={handleTransform} disabled={transforming}>
+                  {transforming ? '변환 중... ✨' : '변환하기!'}
+                </button>
+              </>
+            ) : (
+              <>
+                <img src={transformedImg} alt="변환된 그림" className={styles.transformedImg} />
+                <div className={styles.modalActions}>
+                  <button className={styles.useImgBtn} onClick={handleUseTransformed}>
+                    🪄 이걸로 동화 만들기
+                  </button>
+                  <button className={styles.retryBtn} onClick={() => setTransformedImg(null)}>
+                    🔄 다시 변환
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

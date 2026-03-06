@@ -87,13 +87,31 @@
   color: var(--color-muted);
 }
 
-.changePhotoBtn {
+.photoButtons {
+  display: flex;
+  gap: 10px;
+  width: 100%;
   margin-bottom: 14px;
-  padding: 8px 20px;
-  border: 2px solid var(--color-border);
-  border-radius: 10px;
-  background: #fff;
+}
+
+.photoPickBtn {
+  flex: 1;
+  padding: 12px 8px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
   font-size: 0.9rem;
+  font-family: var(--font-kr-display);
+}
+
+.changePhotoBtn {
+  flex: 1;
+  padding: 10px 8px;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 0.85rem;
   color: var(--color-muted);
   transition: background 0.15s;
 }
@@ -151,6 +169,21 @@
 }
 .sizeBtn.active { border-color: var(--color-primary); }
 
+.transformBtn {
+  width: 100%;
+  padding: 14px;
+  background: #fff;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  border-radius: 18px;
+  font-size: 1rem;
+  font-family: var(--font-kr-display);
+  margin-bottom: 10px;
+  transition: background 0.15s;
+}
+.transformBtn:hover:not(:disabled) { background: #fff5f2; }
+.transformBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .genBtn {
   width: 100%;
   padding: 18px;
@@ -166,3 +199,119 @@
 }
 .genBtn:hover:not(:disabled) { transform: translateY(-2px); }
 .genBtn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+/* 변환 모달 */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 24px;
+  padding: 28px 24px 24px;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.modalTitle {
+  font-family: var(--font-kr-display);
+  font-size: 1.2rem;
+  font-weight: 400;
+}
+
+.modalDesc {
+  font-size: 0.9rem;
+  color: var(--color-muted);
+  margin: -8px 0 0;
+}
+
+.styleGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.styleBtn {
+  padding: 14px 8px;
+  border: 2px solid var(--color-border);
+  border-radius: 14px;
+  background: #fff;
+  font-size: 0.9rem;
+  transition: all 0.15s;
+}
+
+.styleBtnActive {
+  border-color: var(--color-primary);
+  background: #fff5f2;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.doTransformBtn {
+  width: 100%;
+  padding: 16px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-family: var(--font-kr-display);
+}
+.doTransformBtn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+.transformedImg {
+  width: 100%;
+  border-radius: 16px;
+  object-fit: contain;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.useImgBtn {
+  flex: 2;
+  padding: 14px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-family: var(--font-kr-display);
+}
+
+.retryBtn {
+  flex: 1;
+  padding: 14px;
+  background: #fff;
+  color: var(--color-muted);
+  border: 2px solid var(--color-border);
+  border-radius: 14px;
+  font-size: 0.9rem;
+}
