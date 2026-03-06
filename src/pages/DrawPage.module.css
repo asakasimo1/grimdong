@@ -317,10 +317,6 @@
   width: 100%;
 }
 
-.styleGrid > .styleBtnLast {
-  grid-column: 1 / -1;
-}
-
 .styleBtn {
   padding: 14px 8px;
   border: 2px solid var(--color-border);

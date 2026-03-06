@@ -22,18 +22,13 @@ const TRANSFORM_STYLES = [
   },
   {
     key: '스케치', label: '✏️ 스케치',
-    drawPrompt: 'detailed pencil sketch style, black and white, fine line drawing with shading,',
-    photoPrompt: 'Transform this photo into a detailed pencil sketch. Preserve the exact composition and all subjects. Apply fine line drawing with realistic shading.',
+    drawPrompt: 'elegant pencil sketch portrait style, beautiful and attractive faces, refined fine line drawing, soft shading, professional fashion illustration quality,',
+    photoPrompt: 'Transform this photo into an elegant pencil sketch. Preserve the exact composition and all subjects. Draw faces beautifully with attractive refined features. Apply fine line art with soft shading, fashion illustration quality.',
   },
   {
-    key: '얼굴', label: '✨ 예쁜 얼굴',
+    key: '화보', label: '✨ 화보 스타일',
     drawPrompt: 'beautiful idealized portrait, attractive features, smooth skin, bright expressive eyes, elegant professional look,',
-    photoPrompt: 'Beautifully enhance all faces and appearance in this photo. Maintain the exact same composition and subjects. Apply idealized attractive features, smooth glowing skin, bright expressive eyes, and elegant portrait enhancement.',
-  },
-  {
-    key: '유화', label: '🖼️ 유화',
-    drawPrompt: 'classical oil painting style, rich deep colors, dramatic lighting, museum quality fine art, old master technique,',
-    photoPrompt: 'Transform this photo into a classical oil painting. Maintain the exact composition and all subjects. Apply rich deep colors, dramatic chiaroscuro lighting, and museum-quality oil painting technique.',
+    photoPrompt: 'Enhance this photo into a professional magazine cover quality portrait. Maintain the exact same composition and subjects. Apply idealized attractive features, smooth glowing skin, bright expressive eyes, and elegant editorial enhancement.',
   },
 ]
 
@@ -55,6 +50,7 @@ export default function DrawPage() {
   const [cameraStream, setCameraStream]   = useState(null)
   const [showTransform, setShowTransform]   = useState(false)
   const [transformStyle, setTransformStyle] = useState('지브리')
+
   const [transforming, setTransforming]     = useState(false)
   const [transformedImg, setTransformedImg] = useState(null)
 
@@ -430,9 +426,9 @@ export default function DrawPage() {
               <>
                 <p className={styles.modalDesc}>어떤 스타일로 바꿔볼까요?</p>
                 <div className={styles.styleGrid}>
-                  {TRANSFORM_STYLES.map((s, i) => (
+                  {TRANSFORM_STYLES.map((s) => (
                     <button key={s.key}
-                      className={[styles.styleBtn, transformStyle === s.key ? styles.styleBtnActive : '', i === TRANSFORM_STYLES.length - 1 ? styles.styleBtnLast : ''].filter(Boolean).join(' ')}
+                      className={`${styles.styleBtn} ${transformStyle === s.key ? styles.styleBtnActive : ''}`}
                       onClick={() => setTransformStyle(s.key)}>{s.label}</button>
                   ))}
                 </div>
