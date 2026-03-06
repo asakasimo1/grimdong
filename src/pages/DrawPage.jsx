@@ -27,8 +27,7 @@ export default function DrawPage() {
   const [loading, setLoading]   = useState(false)
   const [mode, setMode]         = useState('draw') // 'draw' | 'photo'
   const [photoSelected, setPhotoSelected] = useState(false)
-  const photoInputRef   = useRef(null)
-  const galleryInputRef = useRef(null)
+  const photoInputRef = useRef(null)
   const [showTransform, setShowTransform]   = useState(false)
   const [transformStyle, setTransformStyle] = useState('동화')
   const [transforming, setTransforming]     = useState(false)
@@ -321,21 +320,11 @@ export default function DrawPage() {
         <canvas ref={canvasEl} />
       </div>
 
-      {/* 사진 모드 전용 */}
+      {/* 사진 모드 전용 — label 방식으로 iOS 프로그래매틱 클릭 문제 해결 */}
       {mode === 'photo' && (
         <>
-          {/* 카메라 촬영용 */}
           <input
-            ref={photoInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            style={{ display: 'none' }}
-            onChange={handlePhotoSelect}
-          />
-          {/* 갤러리 선택용 */}
-          <input
-            ref={galleryInputRef}
+            id="photoFileInput"
             type="file"
             accept="image/*"
             style={{ display: 'none' }}
@@ -343,21 +332,18 @@ export default function DrawPage() {
           />
           {!photoSelected ? (
             <div className={styles.photoButtons}>
-              <button className={styles.photoPickBtn} onClick={() => photoInputRef.current?.click()}>
+              <label htmlFor="photoFileInput" className={styles.photoPickBtn}>
                 📷 카메라로 찍기
-              </button>
-              <button className={styles.photoPickBtn} onClick={() => galleryInputRef.current?.click()}>
+              </label>
+              <label htmlFor="photoFileInput" className={styles.photoPickBtn}>
                 🖼️ 갤러리에서 선택
-              </button>
+              </label>
             </div>
           ) : (
             <div className={styles.photoButtons}>
-              <button className={styles.changePhotoBtn} onClick={() => photoInputRef.current?.click()}>
-                📷 다시 찍기
-              </button>
-              <button className={styles.changePhotoBtn} onClick={() => galleryInputRef.current?.click()}>
-                🖼️ 다른 사진 선택
-              </button>
+              <label htmlFor="photoFileInput" className={styles.changePhotoBtn}>
+                🔄 다른 사진 선택
+              </label>
             </div>
           )}
         </>
