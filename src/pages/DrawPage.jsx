@@ -11,24 +11,29 @@ const SIZES  = [4, 8, 14, 22]
 
 const TRANSFORM_STYLES = [
   {
-    key: '동화', label: '📖 동화책',
-    drawPrompt: 'fairy tale book illustration style, soft magical colors, child-friendly,',
-    photoPrompt: 'Transform this photo into a fairy tale book illustration style. Keep the exact same composition, subjects, and layout. Apply soft magical illustrated colors suitable for children.',
+    key: '지브리', label: '🏯 지브리 스타일',
+    drawPrompt: 'Studio Ghibli anime illustration style, soft warm colors, painterly backgrounds, Hayao Miyazaki aesthetic, child-friendly,',
+    photoPrompt: 'Transform this photo into Studio Ghibli anime style. Maintain the exact composition and all subjects. Apply Ghibli characteristic soft warm colors, painterly look, and Miyazaki aesthetic.',
   },
   {
-    key: '만화', label: '🎨 귀여운 만화',
-    drawPrompt: 'cute cartoon illustration style, bright cheerful colors, suitable for children,',
-    photoPrompt: 'Transform this photo into a cute cartoon style. Maintain the exact same composition and all subjects. Apply bright cheerful cartoon rendering for children.',
-  },
-  {
-    key: '수채화', label: '🖌️ 수채화',
+    key: '수채화', label: '🌊 수채화',
     drawPrompt: 'delicate watercolor painting style, soft flowing colors,',
     photoPrompt: 'Transform this photo into a delicate watercolor painting. Keep the original composition and subjects exactly. Apply soft watercolor textures and flowing colors.',
   },
   {
     key: '스케치', label: '✏️ 스케치',
-    drawPrompt: 'pencil sketch style, black and white, fine line drawing,',
-    photoPrompt: 'Transform this photo into a detailed pencil sketch. Preserve the exact composition and all subjects. Apply fine line drawing with shading.',
+    drawPrompt: 'detailed pencil sketch style, black and white, fine line drawing with shading,',
+    photoPrompt: 'Transform this photo into a detailed pencil sketch. Preserve the exact composition and all subjects. Apply fine line drawing with realistic shading.',
+  },
+  {
+    key: '얼굴', label: '✨ 예쁜 얼굴',
+    drawPrompt: 'beautiful idealized portrait, attractive features, smooth skin, bright expressive eyes, elegant professional look,',
+    photoPrompt: 'Beautifully enhance all faces and appearance in this photo. Maintain the exact same composition and subjects. Apply idealized attractive features, smooth glowing skin, bright expressive eyes, and elegant portrait enhancement.',
+  },
+  {
+    key: '유화', label: '🖼️ 유화',
+    drawPrompt: 'classical oil painting style, rich deep colors, dramatic lighting, museum quality fine art, old master technique,',
+    photoPrompt: 'Transform this photo into a classical oil painting. Maintain the exact composition and all subjects. Apply rich deep colors, dramatic chiaroscuro lighting, and museum-quality oil painting technique.',
   },
 ]
 
@@ -49,7 +54,7 @@ export default function DrawPage() {
   const [showCamera, setShowCamera]       = useState(false)
   const [cameraStream, setCameraStream]   = useState(null)
   const [showTransform, setShowTransform]   = useState(false)
-  const [transformStyle, setTransformStyle] = useState('동화')
+  const [transformStyle, setTransformStyle] = useState('지브리')
   const [transforming, setTransforming]     = useState(false)
   const [transformedImg, setTransformedImg] = useState(null)
 
@@ -425,8 +430,9 @@ export default function DrawPage() {
               <>
                 <p className={styles.modalDesc}>어떤 스타일로 바꿔볼까요?</p>
                 <div className={styles.styleGrid}>
-                  {TRANSFORM_STYLES.map((s) => (
-                    <button key={s.key} className={`${styles.styleBtn} ${transformStyle === s.key ? styles.styleBtnActive : ''}`}
+                  {TRANSFORM_STYLES.map((s, i) => (
+                    <button key={s.key}
+                      className={[styles.styleBtn, transformStyle === s.key ? styles.styleBtnActive : '', i === TRANSFORM_STYLES.length - 1 ? styles.styleBtnLast : ''].filter(Boolean).join(' ')}
                       onClick={() => setTransformStyle(s.key)}>{s.label}</button>
                   ))}
                 </div>
