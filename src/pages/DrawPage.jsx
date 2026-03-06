@@ -24,9 +24,9 @@ const TRANSFORM_STYLES = [
     photoPrompt: 'Transform this photo into Studio Ghibli anime style. Maintain the exact composition and all subjects. Apply Ghibli characteristic soft warm colors, painterly look, and Miyazaki aesthetic.',
   },
   {
-    key: '수채화', label: '🌊 수채화',
-    drawPrompt: 'delicate watercolor painting style, soft flowing colors,',
-    photoPrompt: 'Transform this photo into a delicate watercolor painting. Keep the original composition and subjects exactly. Apply soft watercolor textures and flowing colors.',
+    key: '풍경화', label: '🏞️ 풍경화',
+    drawPrompt: 'beautiful landscape painting style, scenic nature background, lush greenery, blue sky, vibrant natural colors, impressionist landscape art,',
+    photoPrompt: 'Transform this photo into a beautiful landscape painting. Maintain the exact composition and all subjects. Enrich the background with scenic nature elements, lush colors, and impressionist landscape painting style.',
   },
   {
     key: '스케치', label: '✏️ 스케치',
