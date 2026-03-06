@@ -10,10 +10,10 @@ const COLORS = ['#E74C3C','#E67E22','#F1C40F','#27AE60','#2980B9','#8E44AD','#1A
 const SIZES  = [4, 8, 14, 22]
 
 const TRANSFORM_STYLES = [
-  { key: '동화', label: '📖 동화책', prompt: 'Transform this drawing into a beautiful fairy tale book illustration with soft, magical colors suitable for children.' },
-  { key: '만화', label: '🎨 귀여운 만화', prompt: 'Transform this drawing into a cute cartoon illustration with bright, cheerful colors suitable for children.' },
-  { key: '수채화', label: '🖌️ 수채화', prompt: 'Transform this drawing into a delicate watercolor painting with soft, flowing colors.' },
-  { key: '실사', label: '📸 실사 사진', prompt: 'Transform this child\'s drawing into a realistic photograph maintaining the same subjects and composition, colorful and child-friendly.' },
+  { key: '동화', label: '📖 동화책', prompt: 'fairy tale book illustration style, soft magical colors, child-friendly,' },
+  { key: '만화', label: '🎨 귀여운 만화', prompt: 'cute cartoon illustration style, bright cheerful colors, suitable for children,' },
+  { key: '수채화', label: '🖌️ 수채화', prompt: 'delicate watercolor painting style, soft flowing colors,' },
+  { key: '실사', label: '📸 실사 사진', prompt: 'realistic photograph style, colorful and child-friendly,' },
 ]
 
 export default function DrawPage() {
@@ -124,38 +124,49 @@ export default function DrawPage() {
       const dataUrl = canvas.toDataURL({ format: 'jpeg', quality: 0.9 })
       const b64 = dataUrl.split(',')[1]
       const style = TRANSFORM_STYLES.find((s) => s.key === transformStyle)
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-      if (!apiKey) throw new Error('API 키 없음: VITE_GEMINI_API_KEY 미설정')
-
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [
-              { text: style.prompt },
-              { inline_data: { mime_type: 'image/jpeg', data: b64 } },
-            ]}],
-            generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
-          }),
-        }
-      )
-      const data = await res.json()
-      console.log('[Gemini 응답]', JSON.stringify(data).slice(0, 500))
-
-      if (!res.ok) {
-        const msg = data.error?.message ?? `HTTP ${res.status}`
-        throw new Error(msg)
+      const openaiHeaders = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
       }
 
-      const parts = data.candidates?.[0]?.content?.parts ?? []
-      const imgPart = parts.find((p) => p.inlineData ?? p.inline_data)
-      if (!imgPart) throw new Error(`이미지 파트 없음. 응답: ${JSON.stringify(parts).slice(0,200)}`)
-      const id = imgPart.inlineData ?? imgPart.inline_data
-      setTransformedImg(`data:${id.mimeType ?? id.mime_type};base64,${id.data}`)
+      // Step 1: GPT-4o Vision으로 그림 내용 묘사
+      const visionRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: openaiHeaders,
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [{ role: 'user', content: [
+            { type: 'text', text: 'Describe this drawing in detail for image generation. Include all subjects, colors, composition, and characters. Be specific. Reply in English only, within 100 words.' },
+            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'low' } },
+          ]}],
+          max_tokens: 200,
+        }),
+      })
+      const visionData = await visionRes.json()
+      const description = visionData.choices?.[0]?.message?.content ?? ''
+      if (!description) throw new Error('그림 묘사 실패')
+
+      // Step 2: DALL-E 3로 스타일 변환 이미지 생성
+      const dalleRes = await fetch('https://api.openai.com/v1/images/generations', {
+        method: 'POST',
+        headers: openaiHeaders,
+        body: JSON.stringify({
+          model: 'dall-e-3',
+          prompt: `${style.prompt} ${description}. Child-friendly, safe for kids.`,
+          size: '1024x1024',
+          quality: 'standard',
+          n: 1,
+          response_format: 'b64_json',
+        }),
+      })
+      const dalleData = await dalleRes.json()
+      if (!dalleRes.ok) throw new Error(dalleData.error?.message ?? `HTTP ${dalleRes.status}`)
+
+      const b64img = dalleData.data?.[0]?.b64_json
+      if (!b64img) throw new Error('이미지 생성 실패')
+      setTransformedImg(`data:image/png;base64,${b64img}`)
     } catch (err) {
-      console.error('[Gemini 에러]', err)
+      console.error('[변환 에러]', err)
       toast.error(`변환 실패: ${err.message}`)
     } finally {
       setTransforming(false)
