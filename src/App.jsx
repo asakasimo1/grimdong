@@ -7,6 +7,7 @@ import KakaoCallback from './pages/KakaoCallback'
 import HomePage      from './pages/HomePage'
 import DrawPage      from './pages/DrawPage'
 import StoryPage     from './pages/StoryPage'
+import AudioPlayer   from './components/AudioPlayer'
 
 function PrivateRoute({ children }) {
   // [테스트 모드] 인증 우회 — 카카오 로그인 없이 자유 접속
@@ -27,6 +28,8 @@ export default function App() {
   useEffect(() => { init() }, [init])
 
   return (
+    <>
+    <AudioPlayer />
     <Routes>
       {/* [테스트 모드] 로그인 페이지 → 홈으로 바로 이동 */}
       <Route path="/login"               element={<Navigate to="/home" replace />} />
@@ -36,5 +39,6 @@ export default function App() {
       <Route path="/story/:id"           element={<PrivateRoute><StoryPage /></PrivateRoute>} />
       <Route path="*"                    element={<Navigate to="/login" replace />} />
     </Routes>
+    </>
   )
 }
