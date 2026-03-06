@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Canvas, PencilBrush } from 'fabric'
+import { Canvas, PencilBrush, FabricImage } from 'fabric'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
@@ -18,6 +18,9 @@ export default function DrawPage() {
   const [size, setSize]     = useState(8)
   const [isEraser, setIsEraser] = useState(false)
   const [loading, setLoading]   = useState(false)
+  const [mode, setMode]         = useState('draw') // 'draw' | 'photo'
+  const [photoSelected, setPhotoSelected] = useState(false)
+  const photoInputRef = useRef(null)
 
   // Fabric.js 초기화
   useEffect(() => {
@@ -49,16 +52,61 @@ export default function DrawPage() {
     c.freeDrawingBrush.width = isEraser ? size * 2.5 : size
   }, [color, size, isEraser])
 
+  const clearCanvas = () => {
+    const c = fabricRef.current
+    if (!c) return
+    c.clear()
+    c.backgroundColor = '#FFFFFF'
+    c.renderAll()
+  }
+
   const handleClear = () => {
-    fabricRef.current.clear()
-    fabricRef.current.backgroundColor = '#FFFFFF'
-    fabricRef.current.renderAll()
+    clearCanvas()
+    setPhotoSelected(false)
+  }
+
+  const handleModeSwitch = (newMode) => {
+    if (newMode === mode) return
+    clearCanvas()
+    setPhotoSelected(false)
+    setIsEraser(false)
+    setMode(newMode)
+    if (fabricRef.current) {
+      fabricRef.current.isDrawingMode = newMode === 'draw'
+    }
+  }
+
+  const handlePhotoSelect = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = async (ev) => {
+      const canvas = fabricRef.current
+      clearCanvas()
+      try {
+        const img = await FabricImage.fromURL(ev.target.result)
+        const scale = Math.min(canvas.getWidth() / img.width, canvas.getHeight() / img.height)
+        img.set({ scaleX: scale, scaleY: scale, selectable: false, evented: false })
+        canvas.add(img)
+        canvas.centerObject(img)
+        canvas.renderAll()
+        setPhotoSelected(true)
+      } catch {
+        toast.error('사진을 불러오지 못했어요.')
+      }
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
   }
 
   const handleGenerate = async () => {
     const canvas = fabricRef.current
-    if (!canvas || canvas.getObjects().length === 0) {
+    if (mode === 'draw' && (!canvas || canvas.getObjects().length === 0)) {
       toast.error('그림을 먼저 그려주세요! 🖍️')
+      return
+    }
+    if (mode === 'photo' && !photoSelected) {
+      toast.error('사진을 먼저 선택해주세요! 📷')
       return
     }
     setLoading(true)
@@ -148,40 +196,79 @@ export default function DrawPage() {
         <button className={styles.clearBtn} onClick={handleClear}>지우기</button>
       </header>
 
+      {/* 모드 탭 */}
+      <div className={styles.modeTabs}>
+        <button
+          className={`${styles.modeTab} ${mode === 'draw' ? styles.modeTabActive : ''}`}
+          onClick={() => handleModeSwitch('draw')}
+        >✏️ 직접 그리기</button>
+        <button
+          className={`${styles.modeTab} ${mode === 'photo' ? styles.modeTabActive : ''}`}
+          onClick={() => handleModeSwitch('photo')}
+        >📷 사진으로 찍기</button>
+      </div>
+
       {/* 캔버스 */}
       <div className={styles.canvasWrap}>
+        {mode === 'photo' && !photoSelected && (
+          <div className={styles.photoOverlay} onClick={() => photoInputRef.current?.click()}>
+            <span className={styles.photoIcon}>📸</span>
+            <p>사진을 찍거나 선택해주세요</p>
+          </div>
+        )}
         <canvas ref={canvasEl} />
       </div>
 
-      {/* 색상 팔레트 */}
-      <div className={styles.palette}>
-        {COLORS.map((c) => (
-          <button
-            key={c}
-            className={`${styles.colorDot} ${!isEraser && color === c ? styles.active : ''}`}
-            style={{ background: c, border: c === '#FFFFFF' ? '2px solid #ddd' : 'none' }}
-            onClick={() => { setColor(c); setIsEraser(false) }}
+      {/* 사진 모드 전용 */}
+      {mode === 'photo' && (
+        <>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handlePhotoSelect}
           />
-        ))}
-        <button
-          className={`${styles.eraserBtn} ${isEraser ? styles.active : ''}`}
-          onClick={() => setIsEraser((v) => !v)}
-          title="지우개"
-        >⬜</button>
-      </div>
+          {photoSelected && (
+            <button className={styles.changePhotoBtn} onClick={() => photoInputRef.current?.click()}>
+              🔄 다른 사진 선택
+            </button>
+          )}
+        </>
+      )}
 
-      {/* 굵기 */}
-      <div className={styles.sizes}>
-        {SIZES.map((s) => (
-          <button
-            key={s}
-            className={`${styles.sizeBtn} ${size === s ? styles.active : ''}`}
-            onClick={() => setSize(s)}
-          >
-            <span style={{ width: s, height: s, borderRadius: '50%', background: '#1A1A2E', display: 'inline-block' }} />
-          </button>
-        ))}
-      </div>
+      {/* 그리기 모드 전용 도구 */}
+      {mode === 'draw' && (
+        <>
+          <div className={styles.palette}>
+            {COLORS.map((c) => (
+              <button
+                key={c}
+                className={`${styles.colorDot} ${!isEraser && color === c ? styles.active : ''}`}
+                style={{ background: c, border: c === '#FFFFFF' ? '2px solid #ddd' : 'none' }}
+                onClick={() => { setColor(c); setIsEraser(false) }}
+              />
+            ))}
+            <button
+              className={`${styles.eraserBtn} ${isEraser ? styles.active : ''}`}
+              onClick={() => setIsEraser((v) => !v)}
+              title="지우개"
+            >⬜</button>
+          </div>
+
+          <div className={styles.sizes}>
+            {SIZES.map((s) => (
+              <button
+                key={s}
+                className={`${styles.sizeBtn} ${size === s ? styles.active : ''}`}
+                onClick={() => setSize(s)}
+              >
+                <span style={{ width: s, height: s, borderRadius: '50%', background: '#1A1A2E', display: 'inline-block' }} />
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* 동화 만들기 버튼 */}
       <button className={styles.genBtn} onClick={handleGenerate} disabled={loading}>
