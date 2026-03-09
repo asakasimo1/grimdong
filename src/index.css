@@ -17,6 +17,7 @@
 
 html, body, #root {
   height: 100%;
+  overflow: hidden;           /* 페이지 전환 시 가로 스크롤 방지 */
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-kr-body);

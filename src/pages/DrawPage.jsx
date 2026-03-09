@@ -9,6 +9,8 @@ import styles from './DrawPage.module.css'
 const COLORS   = ['#E74C3C','#E67E22','#F1C40F','#27AE60','#2980B9','#8E44AD','#1A1A2E','#FFFFFF']
 const SIZES    = [4, 8, 14, 22]
 const STICKERS = ['⭐','❤️','🌈','🦋','🌸','🎈','🌟','☀️','🌙','🎵']
+const MAX_HISTORY = 20
+const MAX_OBJECTS = 150  // 캔버스 객체 수 상한 (SprayBrush 메모리 방지)
 
 const TOOLS = [
   { key: 'pencil',  label: '🖊️ 연필' },
@@ -66,6 +68,7 @@ export default function DrawPage() {
   const historyRef    = useRef([])
   const historyIdxRef = useRef(-1)
   const user          = useAuthStore((s) => s.user)
+  const [canvasSize]  = useState(() => Math.min(window.innerWidth - 40, 480))
 
   const [color, setColor]     = useState('#E74C3C')
   const [size, setSize]       = useState(8)
@@ -87,11 +90,15 @@ export default function DrawPage() {
   // Fabric.js 초기화
   useEffect(() => {
     if (fabricRef.current) return
+    const size = Math.min(window.innerWidth - 40, 480)
     const canvas = new Canvas(canvasEl.current, {
       isDrawingMode: true,
       backgroundColor: '#FFFFFF',
-      width:  Math.min(window.innerWidth - 40, 480),
-      height: Math.min(window.innerWidth - 40, 480),
+      width:  size,
+      height: size,
+      allowTouchScrolling: false,
+      stopContextMenu: true,
+      fireRightClick: false,
     })
     const brush = new PencilBrush(canvas)
     brush.color = '#E74C3C'
@@ -103,11 +110,29 @@ export default function DrawPage() {
     historyRef.current = [JSON.stringify(canvas.toObject())]
     historyIdxRef.current = 0
 
-    // 드로잉 완료 → 히스토리 저장
+    // 드로잉 완료 → 히스토리 저장 (MAX_HISTORY 제한)
     canvas.on('path:created', () => {
+      // 객체 수 상한 초과 시 캔버스를 이미지로 병합하여 메모리 절약
+      if (canvas.getObjects().length > MAX_OBJECTS) {
+        const dataUrl = canvas.toDataURL({ format: 'jpeg', quality: 0.85 })
+        canvas.clear()
+        canvas.backgroundColor = '#FFFFFF'
+        FabricImage.fromURL(dataUrl).then((img) => {
+          img.set({ selectable: false, evented: false })
+          canvas.add(img)
+          canvas.sendObjectToBack(img)
+          canvas.renderAll()
+        })
+        historyRef.current = [JSON.stringify(canvas.toObject())]
+        historyIdxRef.current = 0
+        setCanUndo(false)
+        return
+      }
+
       const state = JSON.stringify(fabricRef.current.toObject())
-      const arr = historyRef.current.slice(0, historyIdxRef.current + 1)
+      let arr = historyRef.current.slice(0, historyIdxRef.current + 1)
       arr.push(state)
+      if (arr.length > MAX_HISTORY) arr = arr.slice(arr.length - MAX_HISTORY)
       historyRef.current = arr
       historyIdxRef.current = arr.length - 1
       setCanUndo(true)
@@ -127,8 +152,9 @@ export default function DrawPage() {
       canvas.setActiveObject(emoji)
       canvas.renderAll()
       const state = JSON.stringify(canvas.toObject())
-      const arr = historyRef.current.slice(0, historyIdxRef.current + 1)
+      let arr = historyRef.current.slice(0, historyIdxRef.current + 1)
       arr.push(state)
+      if (arr.length > MAX_HISTORY) arr = arr.slice(arr.length - MAX_HISTORY)
       historyRef.current = arr
       historyIdxRef.current = arr.length - 1
       setCanUndo(true)
@@ -158,7 +184,7 @@ export default function DrawPage() {
       brush = new SprayBrush(canvas)
       brush.color   = col
       brush.width   = Math.max(w * 3, 24)
-      brush.density = 25
+      brush.density = 10
     } else if (drawTool === 'circle') {
       brush = new CircleBrush(canvas)
       brush.color = col
@@ -481,7 +507,9 @@ export default function DrawPage() {
       {/* 캔버스 */}
       <div
         className={styles.canvasWrap}
-        style={mode === 'photo' && !photoSelected ? { height: 0, overflow: 'hidden', marginBottom: 0 } : {}}
+        style={mode === 'photo' && !photoSelected
+          ? { height: 0, overflow: 'hidden', marginBottom: 0 }
+          : { width: canvasSize, height: canvasSize }}
       >
         <canvas ref={canvasEl} />
       </div>
