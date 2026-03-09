@@ -613,8 +613,8 @@ export default function DrawPage() {
 
       {/* AI 변환 모달 */}
       {showTransform && (
-        <div className={styles.modalBackdrop} onClick={() => { setShowTransform(false); setTransformedImg(null) }}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalBackdrop}>
+          <div className={styles.modal}>
             <button className={styles.closeBtn} onClick={() => { setShowTransform(false); setTransformedImg(null) }}>✕</button>
             <h2 className={styles.modalTitle}>✨ AI 그림 변환</h2>
             {!transformedImg ? (
