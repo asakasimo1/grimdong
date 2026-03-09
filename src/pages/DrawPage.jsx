@@ -617,11 +617,11 @@ export default function DrawPage() {
         </div>
       , document.body)}
 
-      {/* AI 변환 모달 — Portal로 document.body에 마운트 (motion.div stacking context 회피) */}
-      {showTransform && createPortal(
+      {/* AI 변환 모달 — transforming 중에는 showTransform이 바뀌어도 모달 유지 */}
+      {(showTransform || transforming) && createPortal(
         <div className={styles.modalBackdrop} onPointerDown={(e) => e.stopPropagation()}>
           <div className={styles.modal}>
-            <button className={styles.closeBtn} onClick={() => { setShowTransform(false); setTransformedImg(null) }}>✕</button>
+            <button className={styles.closeBtn} disabled={transforming} onClick={() => { setShowTransform(false); setTransformedImg(null) }}>✕</button>
             <h2 className={styles.modalTitle}>✨ AI 그림 변환</h2>
             {!transformedImg ? (
               <>
