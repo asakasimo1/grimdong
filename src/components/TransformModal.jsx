@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useBlocker } from 'react-router-dom'
+import * as Sentry from '@sentry/react'
 import toast from 'react-hot-toast'
 import { useTransformStore } from '../store/useTransformStore'
 import styles from '../pages/DrawPage.module.css'
@@ -92,6 +93,7 @@ export default function TransformModal() {
       else throw new Error('이미지 없음')
     } catch (err) {
       console.error('[변환 에러]', err)
+      Sentry.captureException(err, { extra: { context: 'AI 변환', mode, style } })
       toast.error(`변환 실패: ${err.message}`)
     } finally {
       setTransforming(false)

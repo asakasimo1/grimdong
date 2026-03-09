@@ -4,6 +4,7 @@ import { useNavigate, useBlocker } from 'react-router-dom'
 import { Canvas, PencilBrush, CircleBrush, SprayBrush, FabricImage, FabricText } from 'fabric'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
+import * as Sentry from '@sentry/react'
 import { useAuthStore } from '../store/authStore'
 import { useTransformStore } from '../store/useTransformStore'
 import styles from './DrawPage.module.css'
@@ -346,6 +347,7 @@ export default function DrawPage() {
       navigate(`/story/${saved.id}`)
     } catch (err) {
       console.error('[동화 생성 에러]', err)
+      Sentry.captureException(err, { extra: { context: '동화 생성', mode, userId: user?.id } })
       toast.error(`동화 생성 실패: ${err.message}`)
     } finally {
       setLoading(false)
