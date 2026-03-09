@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useBlocker } from 'react-router-dom'
 import { Canvas, PencilBrush, CircleBrush, SprayBrush, FabricImage, FabricText } from 'fabric'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
@@ -87,6 +87,22 @@ export default function DrawPage() {
   const [selectedSticker, setSelectedSticker] = useState('⭐')
   const [canUndo, setCanUndo]               = useState(false)
   const [msgIdx, setMsgIdx]                 = useState(0)
+
+  // 모달·로딩 중 navigation 원천 차단 (iOS 스와이프 백 포함)
+  const isBlocking = showTransform || transforming || loading
+  const blocker = useBlocker(isBlocking)
+  useEffect(() => {
+    if (blocker.state === 'blocked') blocker.reset()
+  }, [blocker])
+
+  // 모달 열린 동안 Fabric.js drawing 비활성화 (외부 터치 오염 방지)
+  useEffect(() => {
+    const canvas = fabricRef.current
+    if (!canvas) return
+    if (showTransform) {
+      canvas.isDrawingMode = false
+    }
+  }, [showTransform])
 
   // Fabric.js 초기화
   useEffect(() => {
@@ -619,7 +635,13 @@ export default function DrawPage() {
 
       {/* AI 변환 모달 — transforming 중에는 showTransform이 바뀌어도 모달 유지 */}
       {(showTransform || transforming) && createPortal(
-        <div className={styles.modalBackdrop} onPointerDown={(e) => e.stopPropagation()}>
+        <div
+          className={styles.modalBackdrop}
+          onPointerDown={(e) => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation() }}
+          onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); e.nativeEvent?.stopImmediatePropagation() }}
+          onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault() }}
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className={styles.modal}>
             <button className={styles.closeBtn} disabled={transforming} onClick={() => { setShowTransform(false); setTransformedImg(null) }}>✕</button>
             <h2 className={styles.modalTitle}>✨ AI 그림 변환</h2>
