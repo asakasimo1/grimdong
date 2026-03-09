@@ -3,12 +3,13 @@ import { Routes, Route, Navigate, useLocation, useNavigationType } from 'react-r
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAuthStore } from './store/authStore'
 
-import LoginPage     from './pages/LoginPage'
-import KakaoCallback from './pages/KakaoCallback'
-import HomePage      from './pages/HomePage'
-import DrawPage      from './pages/DrawPage'
-import StoryPage     from './pages/StoryPage'
-import AudioPlayer   from './components/AudioPlayer'
+import LoginPage      from './pages/LoginPage'
+import KakaoCallback  from './pages/KakaoCallback'
+import HomePage       from './pages/HomePage'
+import DrawPage       from './pages/DrawPage'
+import StoryPage      from './pages/StoryPage'
+import AudioPlayer    from './components/AudioPlayer'
+import TransformModal from './components/TransformModal'
 
 // 페이지 깊이 — 숫자가 클수록 "안쪽" 화면
 const PAGE_DEPTH = {
@@ -112,6 +113,7 @@ export default function App() {
 
   return (
     <>
+      <TransformModal />
       <AudioPlayer />
       <AnimatePresence mode="sync" custom={isPush} initial={false}>
         <motion.div

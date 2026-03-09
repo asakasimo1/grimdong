@@ -5,13 +5,14 @@ import { Canvas, PencilBrush, CircleBrush, SprayBrush, FabricImage, FabricText }
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
+import { useTransformStore } from '../store/useTransformStore'
 import styles from './DrawPage.module.css'
 
 const COLORS   = ['#E74C3C','#E67E22','#F1C40F','#27AE60','#2980B9','#8E44AD','#1A1A2E','#FFFFFF']
 const SIZES    = [4, 8, 14, 22]
 const STICKERS = ['⭐','❤️','🌈','🦋','🌸','🎈','🌟','☀️','🌙','🎵']
 const MAX_HISTORY = 20
-const MAX_OBJECTS = 150  // 캔버스 객체 수 상한 (SprayBrush 메모리 방지)
+const MAX_OBJECTS = 150
 
 const TOOLS = [
   { key: 'pencil',  label: '🖊️ 연필' },
@@ -28,36 +29,6 @@ const STORY_MESSAGES = [
   { icon: '🎉', text: '거의 다 됐어요!' },
 ]
 
-const TRANSFORM_MESSAGES = [
-  { icon: '🎨', text: 'AI가 그림을 보고 있어요...' },
-  { icon: '✨', text: '마법 붓으로 칠하는 중...' },
-  { icon: '🌟', text: '스타일을 입히고 있어요...' },
-  { icon: '🎭', text: '거의 다 됐어요!' },
-]
-
-const TRANSFORM_STYLES = [
-  {
-    key: '지브리', label: '🏯 지브리 스타일',
-    drawPrompt: 'Studio Ghibli anime illustration style, soft warm colors, painterly backgrounds, Hayao Miyazaki aesthetic, child-friendly,',
-    photoPrompt: 'Transform this photo into Studio Ghibli anime style. Maintain the exact composition and all subjects. Apply Ghibli characteristic soft warm colors, painterly look, and Miyazaki aesthetic.',
-  },
-  {
-    key: '풍경화', label: '🏞️ 풍경화',
-    drawPrompt: 'beautiful landscape painting style, scenic nature background, lush greenery, blue sky, vibrant natural colors, impressionist landscape art,',
-    photoPrompt: 'Transform this photo into a beautiful landscape painting. Maintain the exact composition and all subjects. Enrich the background with scenic nature elements, lush colors, and impressionist landscape painting style.',
-  },
-  {
-    key: '스케치', label: '✏️ 스케치',
-    drawPrompt: 'elegant pencil sketch portrait style, beautiful and attractive faces, refined fine line drawing, soft shading, professional fashion illustration quality,',
-    photoPrompt: 'Convert this photo into an elegant pencil sketch portrait. Keep the original composition and all subjects. Maintain the overall facial structure and identity of each person, but apply subtle natural enhancement — slightly smoother skin, softened blemishes, gently refined features — while still looking like the same real person. Apply fine pencil line art with soft natural shading, realistic portrait sketch style.',
-  },
-  {
-    key: '화보', label: '✨ 화보 스타일',
-    drawPrompt: 'beautiful idealized portrait, attractive features, smooth skin, bright expressive eyes, elegant professional look,',
-    photoPrompt: 'Enhance this photo into a professional magazine cover quality portrait. Maintain the exact same composition and subjects. Apply idealized attractive features, smooth glowing skin, bright expressive eyes, and elegant editorial enhancement.',
-  },
-]
-
 export default function DrawPage() {
   const navigate      = useNavigate()
   const canvasEl      = useRef(null)
@@ -69,40 +40,27 @@ export default function DrawPage() {
   const historyRef    = useRef([])
   const historyIdxRef = useRef(-1)
   const user          = useAuthStore((s) => s.user)
+  const openTransform = useTransformStore((s) => s.open)
   const [canvasSize]  = useState(() => Math.min(window.innerWidth - 40, 480))
 
-  const [color, setColor]     = useState('#E74C3C')
-  const [size, setSize]       = useState(8)
+  const [color, setColor]       = useState('#E74C3C')
+  const [size, setSize]         = useState(8)
   const [isEraser, setIsEraser] = useState(false)
   const [loading, setLoading]   = useState(false)
   const [mode, setMode]         = useState('draw')
-  const [photoSelected, setPhotoSelected] = useState(false)
-  const [showCamera, setShowCamera]       = useState(false)
-  const [cameraStream, setCameraStream]   = useState(null)
-  const [showTransform, setShowTransform]   = useState(false)
-  const [transformStyle, setTransformStyle] = useState('지브리')
-  const [transforming, setTransforming]     = useState(false)
-  const [transformedImg, setTransformedImg] = useState(null)
+  const [photoSelected, setPhotoSelected]   = useState(false)
+  const [showCamera, setShowCamera]         = useState(false)
+  const [cameraStream, setCameraStream]     = useState(null)
   const [drawTool, setDrawTool]             = useState('pencil')
   const [selectedSticker, setSelectedSticker] = useState('⭐')
   const [canUndo, setCanUndo]               = useState(false)
   const [msgIdx, setMsgIdx]                 = useState(0)
 
-  // 모달·로딩 중 navigation 원천 차단 (iOS 스와이프 백 포함)
-  const isBlocking = showTransform || transforming || loading
-  const blocker = useBlocker(isBlocking)
+  // 동화 생성 중 navigation 차단 (iOS 스와이프 백 포함)
+  const blocker = useBlocker(loading)
   useEffect(() => {
     if (blocker.state === 'blocked') blocker.reset()
   }, [blocker])
-
-  // 모달 열린 동안 Fabric.js drawing 비활성화 (외부 터치 오염 방지)
-  useEffect(() => {
-    const canvas = fabricRef.current
-    if (!canvas) return
-    if (showTransform) {
-      canvas.isDrawingMode = false
-    }
-  }, [showTransform])
 
   // Fabric.js 초기화
   useEffect(() => {
@@ -123,13 +81,10 @@ export default function DrawPage() {
     canvas.freeDrawingBrush = brush
     fabricRef.current = canvas
 
-    // 초기 히스토리
     historyRef.current = [JSON.stringify(canvas.toObject())]
     historyIdxRef.current = 0
 
-    // 드로잉 완료 → 히스토리 저장 (MAX_HISTORY 제한)
     canvas.on('path:created', () => {
-      // 객체 수 상한 초과 시 캔버스를 이미지로 병합하여 메모리 절약
       if (canvas.getObjects().length > MAX_OBJECTS) {
         const dataUrl = canvas.toDataURL({ format: 'jpeg', quality: 0.85 })
         canvas.clear()
@@ -145,7 +100,6 @@ export default function DrawPage() {
         setCanUndo(false)
         return
       }
-
       const state = JSON.stringify(fabricRef.current.toObject())
       let arr = historyRef.current.slice(0, historyIdxRef.current + 1)
       arr.push(state)
@@ -155,7 +109,6 @@ export default function DrawPage() {
       setCanUndo(true)
     })
 
-    // 스티커 배치: 빈 영역 탭 → 이모지 추가
     canvas.on('mouse:up', (e) => {
       if (drawToolRef.current !== 'sticker') return
       if (e.target) return
@@ -180,22 +133,19 @@ export default function DrawPage() {
     return () => { canvas.dispose(); fabricRef.current = null }
   }, [])
 
-  // 브러시 설정 통합 (모드·툴·색상·굵기·지우개)
+  // 브러시 설정
   useEffect(() => {
     const canvas = fabricRef.current
     if (!canvas) return
-
     if (mode === 'photo' || drawTool === 'sticker') {
       canvas.isDrawingMode = false
       canvas.selection = false
       return
     }
-
     canvas.isDrawingMode = true
     canvas.selection = false
     const col = isEraser ? '#FFFFFF' : color
     const w   = isEraser ? size * 2.5 : size
-
     let brush
     if (drawTool === 'spray') {
       brush = new SprayBrush(canvas)
@@ -214,15 +164,14 @@ export default function DrawPage() {
     canvas.freeDrawingBrush = brush
   }, [mode, drawTool, color, size, isEraser])
 
-  // 로딩 메시지 순환
+  // 동화 생성 로딩 메시지 순환
   useEffect(() => {
-    if (!loading && !transforming) { setMsgIdx(0); return }
-    const msgs = loading ? STORY_MESSAGES : TRANSFORM_MESSAGES
-    const timer = setInterval(() => setMsgIdx((i) => (i + 1) % msgs.length), 2500)
+    if (!loading) { setMsgIdx(0); return }
+    const timer = setInterval(() => setMsgIdx((i) => (i + 1) % STORY_MESSAGES.length), 2500)
     return () => clearInterval(timer)
-  }, [loading, transforming])
+  }, [loading])
 
-  // ref 동기화 (canvas 이벤트 핸들러용)
+  // ref 동기화
   useEffect(() => { drawToolRef.current = drawTool }, [drawTool])
   useEffect(() => { stickerRef.current = selectedSticker }, [selectedSticker])
 
@@ -325,8 +274,8 @@ export default function DrawPage() {
     e.target.value = ''
   }
 
-  // ── AI 변환 ──────────────────────────────────
-  const handleTransform = async () => {
+  // ── AI 변환 모달 열기 ─────────────────────────
+  const handleOpenTransform = () => {
     const canvas = fabricRef.current
     if (mode === 'draw' && (!canvas || canvas.getObjects().length === 0)) {
       toast.error('그림을 먼저 그려주세요! 🖍️'); return
@@ -334,84 +283,8 @@ export default function DrawPage() {
     if (mode === 'photo' && !photoSelected) {
       toast.error('사진을 먼저 선택해주세요! 📷'); return
     }
-    setTransforming(true)
-    try {
-      const style = TRANSFORM_STYLES.find((s) => s.key === transformStyle)
-      const authHeader = `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
-
-      if (mode === 'draw') {
-        const pngDataUrl = canvas.toDataURL({ format: 'png' })
-        const pngBlob = await fetch(pngDataUrl).then((r) => r.blob())
-        const file = new File([pngBlob], 'drawing.png', { type: 'image/png' })
-        const formData = new FormData()
-        formData.append('image', file)
-        formData.append('prompt', `${style.drawPrompt} Child-friendly, safe for kids, vibrant colors.`)
-        formData.append('model', 'gpt-image-1')
-        formData.append('n', '1')
-        formData.append('size', '1024x1024')
-
-        const editRes = await fetch('https://api.openai.com/v1/images/edits', {
-          method: 'POST',
-          headers: { 'Authorization': authHeader },
-          body: formData,
-        })
-        const editData = await editRes.json()
-        if (!editRes.ok) throw new Error(editData.error?.message ?? `HTTP ${editRes.status}`)
-        const b64img = editData.data?.[0]?.b64_json
-        const imgUrl = editData.data?.[0]?.url
-        if (b64img) setTransformedImg(`data:image/png;base64,${b64img}`)
-        else if (imgUrl) setTransformedImg(imgUrl)
-        else throw new Error('이미지 없음')
-
-      } else {
-        const pngDataUrl = canvas.toDataURL({ format: 'png' })
-        const pngBlob = await fetch(pngDataUrl).then((r) => r.blob())
-        const file = new File([pngBlob], 'photo.png', { type: 'image/png' })
-        const formData = new FormData()
-        formData.append('image', file)
-        formData.append('prompt', style.photoPrompt)
-        formData.append('model', 'gpt-image-1')
-        formData.append('n', '1')
-        formData.append('size', '1024x1024')
-
-        const editRes = await fetch('https://api.openai.com/v1/images/edits', {
-          method: 'POST',
-          headers: { 'Authorization': authHeader },
-          body: formData,
-        })
-        const editData = await editRes.json()
-        if (!editRes.ok) throw new Error(editData.error?.message ?? `HTTP ${editRes.status}`)
-        const b64img = editData.data?.[0]?.b64_json
-        const imgUrl = editData.data?.[0]?.url
-        if (b64img) setTransformedImg(`data:image/png;base64,${b64img}`)
-        else if (imgUrl) setTransformedImg(imgUrl)
-        else throw new Error('이미지 없음')
-      }
-    } catch (err) {
-      console.error('[변환 에러]', err)
-      toast.error(`변환 실패: ${err.message}`)
-    } finally {
-      setTransforming(false)
-    }
-  }
-
-  const handleUseTransformed = async () => {
-    const img = transformedImg
-    setShowTransform(false); setTransformedImg(null)
-    const compressed = await new Promise((resolve) => {
-      const image = new Image()
-      image.onload = () => {
-        const c = document.createElement('canvas')
-        c.width = 800; c.height = 800
-        const ctx = c.getContext('2d')
-        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, 800, 800)
-        const scale = Math.min(800 / image.width, 800 / image.height)
-        ctx.drawImage(image, (800 - image.width * scale) / 2, (800 - image.height * scale) / 2, image.width * scale, image.height * scale)
-        resolve(c.toDataURL('image/jpeg', 0.85))
-      }
-      image.src = img
-    })
-    handleGenerate(compressed)
+    const dataUrl = canvas.toDataURL({ format: 'png' })
+    openTransform(dataUrl, mode, handleGenerate)
   }
 
   // ── 동화 생성 ─────────────────────────────────
@@ -542,7 +415,6 @@ export default function DrawPage() {
       {/* 그리기 도구 */}
       {mode === 'draw' && (
         <>
-          {/* 툴 선택 */}
           <div className={styles.toolTabs}>
             {TOOLS.map((t) => (
               <button key={t.key}
@@ -551,7 +423,6 @@ export default function DrawPage() {
             ))}
           </div>
 
-          {/* 스티커 선택 */}
           {drawTool === 'sticker' && (
             <div className={styles.stickerRow}>
               {STICKERS.map((s) => (
@@ -562,7 +433,6 @@ export default function DrawPage() {
             </div>
           )}
 
-          {/* 색상 팔레트 */}
           {drawTool !== 'sticker' && (
             <div className={styles.palette}>
               {COLORS.map((c) => (
@@ -575,7 +445,6 @@ export default function DrawPage() {
             </div>
           )}
 
-          {/* 굵기 */}
           {drawTool !== 'sticker' && (
             <div className={styles.sizes}>
               {SIZES.map((s) => (
@@ -589,12 +458,12 @@ export default function DrawPage() {
       )}
 
       {/* AI 변환 */}
-      <button className={styles.transformBtn} onClick={() => setShowTransform(true)} disabled={loading || transforming}>
+      <button className={styles.transformBtn} onClick={handleOpenTransform} disabled={loading}>
         ✨ AI로 그림 변환하기
       </button>
 
       {/* 동화 만들기 */}
-      <button className={styles.genBtn} onClick={() => handleGenerate()} disabled={loading || transforming}>
+      <button className={styles.genBtn} onClick={() => handleGenerate()} disabled={loading}>
         {loading ? '동화 만드는 중... ✨' : '🪄 동화로 만들기!'}
       </button>
 
@@ -609,8 +478,8 @@ export default function DrawPage() {
         </div>
       )}
 
-      {/* 로딩 오버레이 — Portal로 document.body에 마운트 */}
-      {(loading || transforming) && createPortal(
+      {/* 동화 생성 로딩 오버레이 */}
+      {loading && createPortal(
         <div
           className={styles.loadingOverlay}
           onPointerDown={(e) => { e.stopPropagation(); e.preventDefault() }}
@@ -619,55 +488,12 @@ export default function DrawPage() {
         >
           <div className={styles.loadingCard}>
             <div className={styles.loadingIconWrap}>
-              <span key={msgIdx} className={styles.loadingIcon}>
-                {(loading ? STORY_MESSAGES : TRANSFORM_MESSAGES)[msgIdx].icon}
-              </span>
+              <span key={msgIdx} className={styles.loadingIcon}>{STORY_MESSAGES[msgIdx].icon}</span>
             </div>
             <div className={styles.loadingDots}>
               <span /><span /><span />
             </div>
-            <p key={`txt-${msgIdx}`} className={styles.loadingText}>
-              {(loading ? STORY_MESSAGES : TRANSFORM_MESSAGES)[msgIdx].text}
-            </p>
-          </div>
-        </div>
-      , document.body)}
-
-      {/* AI 변환 모달 — transforming 중에는 showTransform이 바뀌어도 모달 유지 */}
-      {(showTransform || transforming) && createPortal(
-        <div
-          className={styles.modalBackdrop}
-          onPointerDown={(e) => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation() }}
-          onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); e.nativeEvent?.stopImmediatePropagation() }}
-          onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault() }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className={styles.modal}>
-            <button className={styles.closeBtn} disabled={transforming} onClick={() => { setShowTransform(false); setTransformedImg(null) }}>✕</button>
-            <h2 className={styles.modalTitle}>✨ AI 그림 변환</h2>
-            {!transformedImg ? (
-              <>
-                <p className={styles.modalDesc}>어떤 스타일로 바꿔볼까요?</p>
-                <div className={styles.styleGrid}>
-                  {TRANSFORM_STYLES.map((s) => (
-                    <button key={s.key}
-                      className={`${styles.styleBtn} ${transformStyle === s.key ? styles.styleBtnActive : ''}`}
-                      onClick={() => setTransformStyle(s.key)}>{s.label}</button>
-                  ))}
-                </div>
-                <button className={styles.doTransformBtn} onClick={handleTransform} disabled={transforming}>
-                  {transforming ? '변환 중... ✨' : '변환하기!'}
-                </button>
-              </>
-            ) : (
-              <>
-                <img src={transformedImg} alt="변환된 그림" className={styles.transformedImg} />
-                <div className={styles.modalActions}>
-                  <button className={styles.useImgBtn} onClick={handleUseTransformed}>🪄 이걸로 동화 만들기</button>
-                  <button className={styles.retryBtn} onClick={() => setTransformedImg(null)}>🔄 다시 변환</button>
-                </div>
-              </>
-            )}
+            <p key={`txt-${msgIdx}`} className={styles.loadingText}>{STORY_MESSAGES[msgIdx].text}</p>
           </div>
         </div>
       , document.body)}
