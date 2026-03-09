@@ -573,12 +573,12 @@ export default function DrawPage() {
       )}
 
       {/* AI 변환 */}
-      <button className={styles.transformBtn} onClick={() => setShowTransform(true)} disabled={loading}>
+      <button className={styles.transformBtn} onClick={() => setShowTransform(true)} disabled={loading || transforming}>
         ✨ AI로 그림 변환하기
       </button>
 
       {/* 동화 만들기 */}
-      <button className={styles.genBtn} onClick={() => handleGenerate()} disabled={loading}>
+      <button className={styles.genBtn} onClick={() => handleGenerate()} disabled={loading || transforming}>
         {loading ? '동화 만드는 중... ✨' : '🪄 동화로 만들기!'}
       </button>
 
@@ -595,7 +595,12 @@ export default function DrawPage() {
 
       {/* 로딩 오버레이 — Portal로 document.body에 마운트 */}
       {(loading || transforming) && createPortal(
-        <div className={styles.loadingOverlay}>
+        <div
+          className={styles.loadingOverlay}
+          onPointerDown={(e) => { e.stopPropagation(); e.preventDefault() }}
+          onTouchStart={(e) => { e.stopPropagation(); e.preventDefault() }}
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className={styles.loadingCard}>
             <div className={styles.loadingIconWrap}>
               <span key={msgIdx} className={styles.loadingIcon}>

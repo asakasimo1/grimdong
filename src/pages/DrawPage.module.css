@@ -468,6 +468,9 @@
   justify-content: center;
   z-index: 300;
   backdrop-filter: blur(6px);
+  pointer-events: all;
+  touch-action: none;
+  cursor: wait;
 }
 
 .loadingCard {
