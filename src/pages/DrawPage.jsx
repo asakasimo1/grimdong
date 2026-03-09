@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { Canvas, PencilBrush, CircleBrush, SprayBrush, FabricImage, FabricText } from 'fabric'
 import toast from 'react-hot-toast'
@@ -592,8 +593,8 @@ export default function DrawPage() {
         </div>
       )}
 
-      {/* 로딩 오버레이 */}
-      {(loading || transforming) && (
+      {/* 로딩 오버레이 — Portal로 document.body에 마운트 */}
+      {(loading || transforming) && createPortal(
         <div className={styles.loadingOverlay}>
           <div className={styles.loadingCard}>
             <div className={styles.loadingIconWrap}>
@@ -609,11 +610,11 @@ export default function DrawPage() {
             </p>
           </div>
         </div>
-      )}
+      , document.body)}
 
-      {/* AI 변환 모달 */}
-      {showTransform && (
-        <div className={styles.modalBackdrop}>
+      {/* AI 변환 모달 — Portal로 document.body에 마운트 (motion.div stacking context 회피) */}
+      {showTransform && createPortal(
+        <div className={styles.modalBackdrop} onPointerDown={(e) => e.stopPropagation()}>
           <div className={styles.modal}>
             <button className={styles.closeBtn} onClick={() => { setShowTransform(false); setTransformedImg(null) }}>✕</button>
             <h2 className={styles.modalTitle}>✨ AI 그림 변환</h2>
@@ -642,7 +643,7 @@ export default function DrawPage() {
             )}
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   )
 }
