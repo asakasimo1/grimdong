@@ -78,7 +78,7 @@ export default function StoryPage() {
           logging: false,
         })
         await new Promise((resolve) => canvas.toBlob(async (blob) => {
-          await downloadBlob(blob, `아이담_동화카드_${story.title}.png`)
+          await downloadBlob(blob, `아이담_그림일기_${story.title}.png`)
           resolve()
         }, 'image/png'))
       }
@@ -139,8 +139,8 @@ export default function StoryPage() {
               <input type="checkbox" checked={checks.card} onChange={() => toggle('card')} />
               <span className={styles.checkIcon}>📖</span>
               <div className={styles.checkText}>
-                <span className={styles.checkLabel}>동화 카드</span>
-                <span className={styles.checkDesc}>AI 변환 그림 + 동화 내용</span>
+                <span className={styles.checkLabel}>그림일기 카드</span>
+                <span className={styles.checkDesc}>AI 변환 그림 + 일기 내용</span>
               </div>
               {checks.card && <span className={styles.checkMark}>✓</span>}
             </label>

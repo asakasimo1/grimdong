@@ -209,7 +209,7 @@ export default function TransformModal() {
             <>
               <img src={transformedImg} alt="변환된 그림" className={styles.transformedImg} />
               <div className={styles.modalActions}>
-                <button className={styles.useImgBtn} onClick={handleUseTransformed}>🪄 이걸로 동화 만들기</button>
+                <button className={styles.useImgBtn} onClick={handleUseTransformed}>📔 이걸로 그림일기 만들기</button>
                 <button className={styles.retryBtn} onClick={() => setTransformedImg(null)}>🔄 다시 변환</button>
               </div>
             </>

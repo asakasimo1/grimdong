@@ -24,9 +24,9 @@ const TOOLS = [
 
 const STORY_MESSAGES = [
   { icon: '🖍️', text: '그림을 살펴보고 있어요...' },
-  { icon: '✨', text: '주인공을 떠올리는 중...' },
-  { icon: '📖', text: '동화를 써내려가고 있어요...' },
-  { icon: '🌈', text: '마법을 걸고 있어요...' },
+  { icon: '✏️', text: '오늘 하루를 떠올리는 중...' },
+  { icon: '📔', text: '일기를 써내려가고 있어요...' },
+  { icon: '🌸', text: '마무리하고 있어요...' },
   { icon: '🎉', text: '거의 다 됐어요!' },
 ]
 
@@ -313,18 +313,22 @@ export default function DrawPage() {
           model: 'gpt-4o',
           response_format: { type: 'json_object' },
           messages: [
-            { role: 'system', content: `당신은 어린이 그림책 작가 겸 편집자입니다.
-아이가 그린 그림을 보고, 따뜻하고 생동감 있는 동화를 JSON으로 반환하세요.
+            { role: 'system', content: `당신은 초등학교 1학년 수아의 그림일기를 대신 써주는 선생님입니다.
+수아가 그린 그림을 보고, 수아의 실제 하루 이야기를 1인칭 그림일기로 JSON 반환하세요.
 
 【JSON 형식 — 코드블록 없이 순수 JSON】
-{"title":"동화 제목(8자 이내)","story":"동화 본문","emotion":"주요 감정 1단어","keywords":["요소1","요소2","요소3"],"char_count":글자수}
+{"title":"일기 제목(8자 이내)","story":"일기 본문","emotion":"주요 감정 1단어","keywords":["요소1","요소2","요소3"],"char_count":글자수}
 
 【story 규칙】
-① 180~230자 (공백 포함) ② 문장 15자 이내 ③ 초등1~2학년 수준
-④ "~했어요"체 ⑤ 의성어·의태어 1~2개 ⑥ 대화문 1개 ⑦ 마법 같은 행복한 결말
-⑧ 폭력·공포·슬픔 금지` },
+① 180~230자 (공백 포함) ② 문장 15자 이내 ③ 초등1학년 수준
+④ 1인칭 "나는" 또는 "오늘은"으로 시작 ⑤ "~했어요"체
+⑥ 학교·친구·가족·음식·놀이 등 실제 일상 소재 사용
+⑦ 의성어·의태어 1~2개 ⑧ 대화문 1개
+⑨ 마법·요정·초능력 등 판타지 요소 절대 금지
+⑩ 평범하지만 따뜻하고 뿌듯한 하루 마무리
+⑪ 폭력·공포·슬픔 금지` },
             { role: 'user', content: [
-              { type: 'text', text: '이 그림을 보고 동화를 만들어주세요. 주인공: 수아, 오늘의 주제: 오늘의 이야기' },
+              { type: 'text', text: '이 그림을 보고 수아의 오늘 하루 그림일기를 써주세요. 주인공: 수아 (초등학교 1학년 여자아이)' },
               { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'low' } },
             ]},
           ],
@@ -470,7 +474,7 @@ export default function DrawPage() {
 
       {/* 동화 만들기 */}
       <button className={styles.genBtn} onClick={() => handleGenerate()} disabled={loading}>
-        {loading ? '동화 만드는 중... ✨' : '🪄 동화로 만들기!'}
+        {loading ? '그림일기 쓰는 중... ✏️' : '📔 그림일기로 만들기!'}
       </button>
 
       {/* 카메라 모달 */}
