@@ -346,7 +346,9 @@ export default function DrawPage() {
         .select('id').single()
       if (insertError) throw insertError
 
-      navigate(`/story/${saved.id}`)
+      // 원본 캔버스 그림을 navigation state로 전달 (내 그림 저장용)
+      const originalDataUrl = canvas.toDataURL({ format: 'jpeg', quality: 0.85 })
+      navigate(`/story/${saved.id}`, { state: { originalDataUrl } })
     } catch (err) {
       console.error('[동화 생성 에러]', err)
       Sentry.captureException(err, { extra: { context: '동화 생성', mode, userId: user?.id } })
