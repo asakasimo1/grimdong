@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate, useBlocker } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Canvas, PencilBrush, CircleBrush, SprayBrush, FabricImage, FabricText } from 'fabric'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
@@ -57,11 +57,13 @@ export default function DrawPage() {
   const [canUndo, setCanUndo]               = useState(false)
   const [msgIdx, setMsgIdx]                 = useState(0)
 
-  // 동화 생성 중 navigation 차단 (iOS 스와이프 백 포함)
-  const blocker = useBlocker(loading)
+  // 동화 생성 중 페이지 이탈 차단
   useEffect(() => {
-    if (blocker.state === 'blocked') blocker.reset()
-  }, [blocker])
+    if (!loading) return
+    const handler = (e) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [loading])
 
   // Fabric.js 초기화
   useEffect(() => {
