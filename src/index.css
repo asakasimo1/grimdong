@@ -3,16 +3,16 @@
 :root {
   --font-kr-display: 'Cafe24 Ssurround', 'Pretendard Variable', sans-serif;
   --font-kr-body:    'Pretendard Variable', 'Apple SD Gothic Neo', sans-serif;
-  --font-en:         'Poppins', sans-serif;
+  --font-en:         'Inter', 'Poppins', sans-serif;
 
-  --color-primary:   #FF6B35;
-  --color-secondary: #FFD43B;
-  --color-bg:        #FFFBF5;
+  --color-primary:   #3D5AFE;
+  --color-secondary: #EEF1FF;
+  --color-bg:        #F5F6FA;
   --color-surface:   #FFFFFF;
-  --color-text:      #1A1A2E;
-  --color-muted:     #888;
-  --color-border:    #E8E8E8;
-  --radius:          16px;
+  --color-text:      #111111;
+  --color-muted:     #9EA3B0;
+  --color-border:    #EBEBEB;
+  --radius:          12px;
 }
 
 html, body, #root {

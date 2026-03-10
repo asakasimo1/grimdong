@@ -5,6 +5,7 @@
   padding: 0 20px 40px;
   display: flex;
   flex-direction: column;
+  background: var(--color-bg);
 }
 
 .header {
@@ -12,8 +13,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 0 16px;
-  border-bottom: 1px solid var(--color-border);
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .logoSmall {
@@ -25,20 +25,20 @@
 
 .outBtn {
   background: none;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 6px 14px;
+  border: none;
+  padding: 6px 4px;
   font-size: 0.85rem;
   color: var(--color-muted);
 }
-.outBtn:hover { background: #f5f5f5; }
+.outBtn:hover { color: var(--color-text); }
 
-.greeting { margin-bottom: 32px; }
+.greeting { margin-bottom: 28px; }
 
 .hi {
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 4px;
+  color: var(--color-text);
 }
 .hi strong { color: var(--color-primary); }
 
@@ -50,38 +50,36 @@
   justify-content: center;
   gap: 12px;
   width: 100%;
-  padding: 20px;
+  padding: 18px 20px;
   background: var(--color-primary);
   color: #fff;
   border: none;
-  border-radius: 20px;
-  font-size: 1.2rem;
-  font-family: var(--font-kr-display);
-  font-weight: 400;
-  box-shadow: 0 6px 24px rgba(255, 107, 53, 0.35);
-  transition: transform 0.15s, box-shadow 0.15s;
-  margin-bottom: 40px;
+  border-radius: var(--radius);
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: var(--font-kr-body);
+  transition: opacity 0.15s;
+  margin-bottom: 36px;
 }
-.drawBtn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(255, 107, 53, 0.45);
-}
+.drawBtn:hover { opacity: 0.88; }
 
-.drawIcon { font-size: 1.6rem; }
+.drawIcon { font-size: 1.4rem; }
 
 .sectionTitle {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  margin-bottom: 16px;
-  color: var(--color-text);
+  margin-bottom: 14px;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .emptyBox {
   background: var(--color-surface);
-  border: 2px dashed var(--color-border);
   border-radius: var(--radius);
-  padding: 40px;
+  padding: 36px;
   text-align: center;
   color: var(--color-muted);
   line-height: 2;
+  font-size: 0.95rem;
 }
