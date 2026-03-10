@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useBlocker } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
 import toast from 'react-hot-toast'
 import { useTransformStore } from '../store/useTransformStore'
@@ -43,11 +42,13 @@ export default function TransformModal() {
 
   const [msgIdx, setMsgIdx] = useState(0)
 
-  // 변환 중 navigation 차단 (iOS 스와이프 백 포함)
-  const blocker = useBlocker(transforming)
+  // 변환 중 페이지 이탈 차단
   useEffect(() => {
-    if (blocker.state === 'blocked') blocker.reset()
-  }, [blocker])
+    if (!transforming) return
+    const handler = (e) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [transforming])
 
   // 로딩 메시지 순환
   useEffect(() => {
