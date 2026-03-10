@@ -97,14 +97,14 @@ export default function TransformModal() {
             n: 1,
             size: '1024x1024',
             quality: 'standard',
-            response_format: 'url',
+            response_format: 'b64_json',
           }),
         })
         const dalleData = await dalleRes.json()
         if (!dalleRes.ok) throw new Error(dalleData.error?.message ?? `HTTP ${dalleRes.status}`)
-        const url = dalleData.data?.[0]?.url
-        if (!url) throw new Error('NO_IMAGE')
-        setTransformedImg(url)
+        const b64 = dalleData.data?.[0]?.b64_json
+        if (!b64) throw new Error('NO_IMAGE')
+        setTransformedImg(`data:image/png;base64,${b64}`)
 
       } else {
         // Photo: gpt-image-1 edit (원본 구도 유지)
