@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { supabase } from '../lib/supabase'
@@ -8,6 +8,8 @@ const EMOTION_EMOJI = {
   행복: '😊', 설렘: '💫', 신기함: '✨', 즐거움: '🎉',
   따뜻함: '🌸', 뿌듯함: '🌟', 신남: '🎈',
 }
+
+const PAGE_SIZE = 10
 
 const formatDate = (iso) => {
   const d = new Date(iso)
@@ -19,30 +21,58 @@ export default function HomePage() {
   const { user, signOut } = useAuthStore()
   const nickname  = user?.user_metadata?.name ?? '어린이'
   const [stories, setStories] = useState([])
+  const [total, setTotal]     = useState(0)
+  const [page, setPage]       = useState(0)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const totalPages = Math.ceil(total / PAGE_SIZE)
+
+  const fetchStories = useCallback(async (p) => {
     if (!user) return
-    supabase
-      .from('stories')
-      .select('id, title, emotion, image_url, created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setStories(data ?? [])
-        setLoading(false)
-      })
+    setLoading(true)
+    const from = p * PAGE_SIZE
+    const to   = from + PAGE_SIZE - 1
+    const [{ count }, { data }] = await Promise.all([
+      supabase.from('stories').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+      supabase.from('stories')
+        .select('id, title, emotion, image_url, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .range(from, to),
+    ])
+    setTotal(count ?? 0)
+    setStories(data ?? [])
+    setLoading(false)
   }, [user])
+
+  useEffect(() => { fetchStories(page) }, [fetchStories, page])
+
+  const handleDelete = async (e, story) => {
+    e.stopPropagation()
+    if (!window.confirm(`"${story.title}" 일기를 삭제할까요?`)) return
+
+    await supabase.from('stories').delete().eq('id', story.id)
+
+    try {
+      const path = new URL(story.image_url).pathname.split('/drawings/')[1]
+      if (path) await supabase.storage.from('drawings').remove([path])
+    } catch {}
+
+    const newTotalPages = Math.ceil((total - 1) / PAGE_SIZE)
+    if (page >= newTotalPages && page > 0) {
+      setPage((p) => p - 1)
+    } else {
+      fetchStories(page)
+    }
+  }
 
   return (
     <div className={styles.wrap}>
-      {/* 상단 바 */}
       <header className={styles.header}>
         <span className={styles.logoSmall}>아이<em>담</em></span>
         <button className={styles.outBtn} onClick={signOut}>로그아웃</button>
       </header>
 
-      {/* 인사말 */}
       <section className={styles.greeting}>
         <p className={styles.hi}>안녕, <strong>{nickname}</strong>! 👋</p>
         <p className={styles.sub}>오늘의 그림을 그려볼까요?</p>
@@ -51,15 +81,16 @@ export default function HomePage() {
         </p>
       </section>
 
-      {/* 그리기 시작 버튼 */}
       <button className={styles.drawBtn} onClick={() => navigate('/draw')}>
         <span className={styles.drawIcon}>🎨</span>
         <span>그림 그리기 시작!</span>
       </button>
 
-      {/* 그림일기 목록 */}
       <section className={styles.recentWrap}>
-        <h2 className={styles.sectionTitle}>최근 나의 그림일기</h2>
+        <h2 className={styles.sectionTitle}>
+          최근 나의 그림일기
+          {total > 0 && <span className={styles.totalCount}>{total}</span>}
+        </h2>
         {loading ? (
           <div className={styles.emptyBox}>불러오는 중...</div>
         ) : stories.length === 0 ? (
@@ -68,20 +99,29 @@ export default function HomePage() {
             <p>첫 그림을 그려보세요! ✨</p>
           </div>
         ) : (
-          <ul className={styles.storyList}>
-            {stories.map((s) => (
-              <li key={s.id} className={styles.storyItem} onClick={() => navigate(`/story/${s.id}`)}>
-                <img src={s.image_url} alt={s.title} className={styles.storyThumb} />
-                <div className={styles.storyInfo}>
-                  <span className={styles.storyTitle}>{s.title}</span>
-                  <span className={styles.storySub}>
-                    {EMOTION_EMOJI[s.emotion] ?? '💛'} {s.emotion} · {formatDate(s.created_at)}
-                  </span>
-                </div>
-                <span className={styles.storyArrow}>›</span>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className={styles.storyList}>
+              {stories.map((s) => (
+                <li key={s.id} className={styles.storyItem} onClick={() => navigate(`/story/${s.id}`)}>
+                  <img src={s.image_url} alt={s.title} className={styles.storyThumb} />
+                  <div className={styles.storyInfo}>
+                    <span className={styles.storyTitle}>{s.title}</span>
+                    <span className={styles.storySub}>
+                      {EMOTION_EMOJI[s.emotion] ?? '💛'} {s.emotion} · {formatDate(s.created_at)}
+                    </span>
+                  </div>
+                  <button className={styles.deleteBtn} onClick={(e) => handleDelete(e, s)}>🗑️</button>
+                </li>
+              ))}
+            </ul>
+            {totalPages > 1 && (
+              <div className={styles.pagination}>
+                <button className={styles.pageBtn} onClick={() => setPage((p) => p - 1)} disabled={page === 0}>‹</button>
+                <span className={styles.pageInfo}>{page + 1} / {totalPages}</span>
+                <button className={styles.pageBtn} onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>›</button>
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>
