@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
 import { supabase } from '../lib/supabase'
 import styles from './HomePage.module.css'
@@ -51,19 +52,19 @@ export default function HomePage() {
     e.stopPropagation()
     if (!window.confirm(`"${story.title}" 일기를 삭제할까요?`)) return
 
-    await supabase.from('stories').delete().eq('id', story.id)
+    const { error } = await supabase.from('stories').delete().eq('id', story.id)
+    if (error) {
+      console.error('[삭제 에러]', error)
+      toast.error(`삭제 실패: ${error.message}`)
+      return
+    }
 
     try {
       const path = new URL(story.image_url).pathname.split('/drawings/')[1]
       if (path) await supabase.storage.from('drawings').remove([path])
     } catch {}
 
-    const newTotalPages = Math.ceil((total - 1) / PAGE_SIZE)
-    if (page >= newTotalPages && page > 0) {
-      setPage((p) => p - 1)
-    } else {
-      fetchStories(page)
-    }
+    fetchStories(page)
   }
 
   return (
