@@ -23,6 +23,23 @@
 }
 .logoSmall em { font-style: normal; color: var(--color-primary); }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.settingsBtn {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  padding: 6px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.settingsBtn:hover { opacity: 1; }
+
 .outBtn {
   background: none;
   border: none;
@@ -43,6 +60,13 @@
 .hi strong { color: var(--color-primary); }
 
 .sub { color: var(--color-muted); font-size: 1rem; }
+
+.message {
+  margin-top: 10px;
+  font-size: 0.95rem;
+  color: var(--color-primary);
+  font-weight: 500;
+}
 
 .drawBtn {
   display: flex;

@@ -9,6 +9,46 @@ import { useAuthStore } from '../store/authStore'
 import { useTransformStore } from '../store/useTransformStore'
 import styles from './DrawPage.module.css'
 
+function buildPrompt(profile) {
+  const name    = profile?.name    || '수아'
+  const grade   = profile?.grade   || '1학년'
+  const gender  = profile?.gender  || '여자'
+  const likes   = profile?.likes?.length   ? profile.likes.join(', ')   : null
+  const friends = profile?.friends?.length ? profile.friends.join(', ') : null
+  const family  = profile?.family?.length  ? profile.family.join(', ')  : null
+  const pet     = profile?.pet || null
+  const gradeNum = grade.replace('학년', '')
+
+  const info = [
+    `이름: ${name}`,
+    `학년: 초등학교 ${grade}`,
+    `성별: ${gender}아이`,
+    likes   ? `좋아하는 것: ${likes}`   : null,
+    friends ? `친한 친구: ${friends}`   : null,
+    family  ? `가족 구성: ${family}`    : null,
+    pet     ? `반려동물: ${pet}`        : null,
+  ].filter(Boolean).join('\n')
+
+  return `당신은 초등학생 ${name}의 그림일기를 대신 써주는 선생님입니다.
+${name}이(가) 그린 그림을 보고, ${name}의 실제 하루 이야기를 1인칭 그림일기로 JSON 반환하세요.
+
+【아이 정보】
+${info}
+
+【JSON 형식 — 코드블록 없이 순수 JSON】
+{"title":"일기 제목(8자 이내)","story":"일기 본문","emotion":"주요 감정 1단어","keywords":["요소1","요소2","요소3"],"char_count":글자수}
+
+【story 규칙】
+① 180~230자 (공백 포함) ② 문장 15자 이내 ③ 초등${gradeNum}학년 수준
+④ "오늘은" 또는 "나는"으로 시작 ⑤ "~했어요"체
+⑥ "나는"과 "${name}은/는"을 자연스럽게 번갈아 사용
+⑦ 학교·친구·가족·음식·놀이 등 실제 일상 소재 사용${likes   ? `\n⑦-1 좋아하는 것(${likes}) 중 하나를 소재로 활용` : ''}${friends ? `\n⑦-2 친구(${friends}) 중 하나를 자연스럽게 등장` : ''}${family  ? `\n⑦-3 가족(${family}) 중 누군가를 자연스럽게 등장` : ''}${pet     ? `\n⑦-4 반려동물 ${pet}을/를 소재로 활용 가능` : ''}
+⑧ 의성어·의태어 1~2개 ⑨ 대화문 1개
+⑩ 마법·요정·초능력 등 판타지 요소 절대 금지
+⑪ 평범하지만 따뜻하고 뿌듯한 하루 마무리
+⑫ 폭력·공포·슬픔 금지`
+}
+
 const COLORS   = ['#E74C3C','#E67E22','#F1C40F','#27AE60','#2980B9','#8E44AD','#1A1A2E','#FFFFFF']
 const SIZES    = [4, 8, 14, 22]
 const STICKERS = ['⭐','❤️','🌈','🦋','🌸','🎈','🌟','☀️','🌙','🎵']
@@ -44,6 +84,7 @@ export default function DrawPage() {
   const openTransform = useTransformStore((s) => s.open)
   const [canvasSize]  = useState(() => Math.min(window.innerWidth - 40, 480))
 
+  const [profile, setProfile]   = useState(null)
   const [color, setColor]       = useState('#E74C3C')
   const [size, setSize]         = useState(8)
   const [isEraser, setIsEraser] = useState(false)
@@ -56,6 +97,13 @@ export default function DrawPage() {
   const [selectedSticker, setSelectedSticker] = useState('⭐')
   const [canUndo, setCanUndo]               = useState(false)
   const [msgIdx, setMsgIdx]                 = useState(0)
+
+  // 프로필 로드
+  useEffect(() => {
+    if (!user) return
+    supabase.from('profiles').select('*').eq('id', user.id).single()
+      .then(({ data }) => setProfile(data ?? null))
+  }, [user])
 
   // 동화 생성 중 페이지 이탈 차단
   useEffect(() => {
@@ -318,23 +366,9 @@ export default function DrawPage() {
           model: 'gpt-4o',
           response_format: { type: 'json_object' },
           messages: [
-            { role: 'system', content: `당신은 초등학교 1학년 수아의 그림일기를 대신 써주는 선생님입니다.
-수아가 그린 그림을 보고, 수아의 실제 하루 이야기를 1인칭 그림일기로 JSON 반환하세요.
-
-【JSON 형식 — 코드블록 없이 순수 JSON】
-{"title":"일기 제목(8자 이내)","story":"일기 본문","emotion":"주요 감정 1단어","keywords":["요소1","요소2","요소3"],"char_count":글자수}
-
-【story 규칙】
-① 180~230자 (공백 포함) ② 문장 15자 이내 ③ 초등1학년 수준
-④ "오늘은" 또는 "나는"으로 시작 ⑤ "~했어요"체
-⑥ 본문에서 "나는"과 "수아는"을 자연스럽게 번갈아 사용 (예: "나는 신났어요.", "수아는 기분이 좋았어요.")
-⑦ 학교·친구·가족·음식·놀이 등 실제 일상 소재 사용
-⑧ 의성어·의태어 1~2개 ⑨ 대화문 1개
-⑩ 마법·요정·초능력 등 판타지 요소 절대 금지
-⑪ 평범하지만 따뜻하고 뿌듯한 하루 마무리
-⑫ 폭력·공포·슬픔 금지` },
+            { role: 'system', content: buildPrompt(profile) },
             { role: 'user', content: [
-              { type: 'text', text: '이 그림을 보고 수아의 오늘 하루 그림일기를 써주세요. 주인공: 수아 (초등학교 1학년 여자아이)' },
+              { type: 'text', text: `이 그림을 보고 ${profile?.name || '수아'}의 오늘 하루 그림일기를 써주세요.` },
               { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'low' } },
             ]},
           ],

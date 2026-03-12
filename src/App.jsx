@@ -8,6 +8,7 @@ import KakaoCallback  from './pages/KakaoCallback'
 import HomePage       from './pages/HomePage'
 import DrawPage       from './pages/DrawPage'
 import StoryPage      from './pages/StoryPage'
+import SettingsPage   from './pages/SettingsPage'
 import AudioPlayer    from './components/AudioPlayer'
 import TransformModal from './components/TransformModal'
 
@@ -16,6 +17,7 @@ const PAGE_DEPTH = {
   '/login':                 0,
   '/auth/kakao/callback':   0,
   '/home':                  1,
+  '/settings':              2,
   '/draw':                  2,
   '/story':                 3,
 }
@@ -125,6 +127,7 @@ export default function App() {
             <Route path="/login"               element={<LoginPage />} />
             <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
             <Route path="/home"                element={<PrivateRoute><HomePage /></PrivateRoute>} />
+            <Route path="/settings"            element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
             <Route path="/draw"                element={<PrivateRoute><DrawPage /></PrivateRoute>} />
             <Route path="/story/:id"           element={<PrivateRoute><StoryPage /></PrivateRoute>} />
             <Route path="*"                    element={<Navigate to="/login" replace />} />

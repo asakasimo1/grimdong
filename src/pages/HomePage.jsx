@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
@@ -12,6 +12,15 @@ const EMOTION_EMOJI = {
 
 const PAGE_SIZE = 10
 
+const MESSAGES = [
+  '오늘도 멋진 그림 그려볼까? 🖍️',
+  '어떤 그림을 그릴지 벌써 기대돼! 🎨',
+  '오늘 하루도 그림으로 남겨보자! 📔',
+  '네 그림이 일기가 되는 마법! ✨',
+  '오늘은 어떤 이야기가 나올까? 🌟',
+  '붓 들고 오늘의 주인공이 되자! 🌈',
+]
+
 const formatDate = (iso) => {
   const d = new Date(iso)
   return `${d.getMonth() + 1}월 ${d.getDate()}일`
@@ -20,13 +29,23 @@ const formatDate = (iso) => {
 export default function HomePage() {
   const navigate  = useNavigate()
   const { user, signOut } = useAuthStore()
-  const nickname  = user?.user_metadata?.name ?? '어린이'
-  const [stories, setStories] = useState([])
-  const [total, setTotal]     = useState(0)
-  const [page, setPage]       = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [childName, setChildName] = useState('')
+  const [stories,   setStories]   = useState([])
+  const [total,     setTotal]     = useState(0)
+  const [page,      setPage]      = useState(0)
+  const [loading,   setLoading]   = useState(true)
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
+
+  // 접속마다 랜덤 메시지 고정
+  const message = useMemo(() => MESSAGES[Math.floor(Math.random() * MESSAGES.length)], [])
+
+  // 프로필에서 아이 이름 로드
+  useEffect(() => {
+    if (!user) return
+    supabase.from('profiles').select('name').eq('id', user.id).single()
+      .then(({ data }) => setChildName(data?.name ?? ''))
+  }, [user])
 
   const fetchStories = useCallback(async (p) => {
     if (!user) return
@@ -67,19 +86,22 @@ export default function HomePage() {
     fetchStories(page)
   }
 
+  const displayName = childName || user?.user_metadata?.name || '친구'
+
   return (
     <div className={styles.wrap}>
       <header className={styles.header}>
         <span className={styles.logoSmall}>아이<em>담</em></span>
-        <button className={styles.outBtn} onClick={signOut}>로그아웃</button>
+        <div className={styles.headerActions}>
+          <button className={styles.settingsBtn} onClick={() => navigate('/settings')}>⚙️</button>
+          <button className={styles.outBtn} onClick={signOut}>로그아웃</button>
+        </div>
       </header>
 
       <section className={styles.greeting}>
-        <p className={styles.hi}>안녕, <strong>{nickname}</strong>! 👋</p>
+        <p className={styles.hi}>안녕, <strong>{displayName}</strong>! 👋</p>
         <p className={styles.sub}>오늘의 그림을 그려볼까요?</p>
-        <p style={{ marginTop: '10px', fontSize: '0.95rem', color: '#3D5AFE', fontWeight: 500 }}>
-          수아야, 아빠가 너를 위해 만들었어! 마음껏 그려봐 🖍️
-        </p>
+        <p className={styles.message}>{message}</p>
       </section>
 
       <button className={styles.drawBtn} onClick={() => navigate('/draw')}>
