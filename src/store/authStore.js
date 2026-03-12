@@ -7,13 +7,15 @@ export const useAuthStore = create((set) => ({
   loading: true,
 
   init: async () => {
-    // [테스트 모드] 카카오 로그인 없이 mock 유저 사용
-    const mockUser = { id: 'test-user', user_metadata: { name: '테스트' } }
     const { data: { session } } = await supabase.auth.getSession()
-    set({ user: session?.user ?? mockUser, loading: false })
+    set({ user: session?.user ?? null, loading: false })
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      set({ user: session?.user ?? null })
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        set({ user: null, profile: null })
+      } else if (session?.user) {
+        set({ user: session.user })
+      }
     })
   },
 
