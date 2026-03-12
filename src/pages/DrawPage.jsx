@@ -292,6 +292,11 @@ export default function DrawPage() {
 
   // ── 동화 생성 ─────────────────────────────────
   const handleGenerate = async (overrideDataUrl = null) => {
+    if (!user) {
+      toast.error('로그인이 필요해요. 다시 로그인해주세요.')
+      navigate('/login')
+      return
+    }
     const canvas = fabricRef.current
     if (!overrideDataUrl) {
       if (mode === 'draw' && (!canvas || canvas.getObjects().length === 0)) {
