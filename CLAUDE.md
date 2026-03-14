@@ -167,6 +167,11 @@ chore: 설정, 패키지 변경
 - `.env.local` 커밋 금지
 - `main` 브랜치에 직접 push 금지
 
+### ⚠️ AI 변환 중요 규칙
+- **draw/photo 모드 모두 `gpt-image-1` edit API (`/v1/images/edits`) 사용**
+- GPT-4o Vision → DALL-E 3 두 단계 방식은 **반복적으로 오류 발생 — 절대 사용 금지**
+- 변환 로직 위치: `src/components/TransformModal.jsx`의 `handleTransform` 함수
+
 ---
 
 ## 자주 쓰는 명령어
