@@ -370,25 +370,30 @@ export default function DrawPage() {
     try {
       const dataUrl = overrideDataUrl ?? canvas.toDataURL({ format: 'jpeg', quality: 0.85 })
       const b64 = dataUrl.split(',')[1]
+      const mimeType = dataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg'
 
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}` },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: buildPrompt(profile) },
-            { role: 'user', content: [
-              { type: 'text', text: `이 그림을 보고 ${profile?.name || '수아'}의 오늘 하루 그림일기를 써주세요.` },
-              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'low' } },
-            ]},
-          ],
-          max_tokens: 600, temperature: 0.85,
-        }),
-      })
-      const data = await res.json()
-      const story = JSON.parse(data.choices?.[0]?.message?.content ?? '')
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: buildPrompt(profile) }] },
+            contents: [{ parts: [
+              { text: `이 그림을 보고 ${profile?.name || '수아'}의 오늘 하루 그림일기를 써주세요.` },
+              { inline_data: { mime_type: mimeType, data: b64 } },
+            ]}],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.85,
+              maxOutputTokens: 600,
+            },
+          }),
+        }
+      )
+      const geminiData = await geminiRes.json()
+      if (!geminiRes.ok) throw new Error(geminiData.error?.message ?? `HTTP ${geminiRes.status}`)
+      const story = JSON.parse(geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? '')
 
       const blob = await fetch(dataUrl).then((r) => r.blob())
       const fileName = `${user.id}/${Date.now()}.jpg`
