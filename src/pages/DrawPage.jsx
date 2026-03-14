@@ -80,6 +80,7 @@ export default function DrawPage() {
   const stickerRef    = useRef('⭐')
   const historyRef    = useRef([])
   const historyIdxRef = useRef(-1)
+  const photoDataUrlRef = useRef(null)   // photo 모드 원본 데이터 URL 보관
   const user          = useAuthStore((s) => s.user)
   const openTransform = useTransformStore((s) => s.open)
   const [canvasSize]  = useState(() => Math.min(window.innerWidth - 40, 480))
@@ -243,6 +244,7 @@ export default function DrawPage() {
   const handleClear = () => {
     clearCanvas()
     setPhotoSelected(false)
+    photoDataUrlRef.current = null
     const state = JSON.stringify(fabricRef.current?.toObject() ?? {})
     historyRef.current = [state]
     historyIdxRef.current = 0
@@ -282,6 +284,7 @@ export default function DrawPage() {
       const scale = Math.min(canvas.getWidth() / img.width, canvas.getHeight() / img.height)
       img.set({ scaleX: scale, scaleY: scale, selectable: false, evented: false })
       canvas.add(img); canvas.centerObject(img); canvas.renderAll()
+      photoDataUrlRef.current = dataUrl   // 원본 보관
       setPhotoSelected(true)
     } catch {
       toast.error('사진을 불러오지 못했어요.')
@@ -334,7 +337,10 @@ export default function DrawPage() {
     if (mode === 'photo' && !photoSelected) {
       toast.error('사진을 먼저 선택해주세요! 📷'); return
     }
-    const dataUrl = canvas.toDataURL({ format: 'png' })
+    // photo 모드: tainted canvas 오류 방지를 위해 원본 데이터 URL 사용
+    const dataUrl = mode === 'photo' && photoDataUrlRef.current
+      ? photoDataUrlRef.current
+      : canvas.toDataURL({ format: 'png' })
     openTransform(dataUrl, mode, handleGenerate)
   }
 
