@@ -67,44 +67,28 @@ export default function TransformModal() {
       const authHeader = `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
 
       if (mode === 'draw') {
-        // Draw: GPT-4o Vision으로 묘사 → DALL-E 3 생성 (안전 필터 우회)
-        const b64 = canvasDataUrl.split(',')[1]
+        // Draw: gpt-image-1 edit (photo 모드와 동일한 방식으로 통일)
+        const pngBlob = await fetch(canvasDataUrl).then((r) => r.blob())
+        const file = new File([pngBlob], 'drawing.png', { type: 'image/png' })
+        const formData = new FormData()
+        formData.append('image', file)
+        formData.append('prompt', `${styleObj.drawPrompt} Strictly family-friendly, safe for children, no violence, no adult content.`)
+        formData.append('model', 'gpt-image-1')
+        formData.append('n', '1')
+        formData.append('size', '1024x1024')
 
-        const visionRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        const editRes = await fetch('https://api.openai.com/v1/images/edits', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
-          body: JSON.stringify({
-            model: 'gpt-4o',
-            messages: [{
-              role: 'user',
-              content: [
-                { type: 'text', text: "Describe this child's drawing briefly in English for image generation. Identify objects, characters, colors, and scene. Under 80 words." },
-                { type: 'image_url', image_url: { url: `data:image/png;base64,${b64}`, detail: 'low' } },
-              ],
-            }],
-            max_tokens: 120,
-          }),
+          headers: { 'Authorization': authHeader },
+          body: formData,
         })
-        const visionData = await visionRes.json()
-        const description = visionData.choices?.[0]?.message?.content ?? "a colorful children's drawing with simple shapes"
-
-        const dalleRes = await fetch('https://api.openai.com/v1/images/generations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
-          body: JSON.stringify({
-            model: 'dall-e-3',
-            prompt: `${styleObj.drawPrompt} The scene: ${description}. Strictly family-friendly, safe for children, no violence, no adult content.`,
-            n: 1,
-            size: '1024x1024',
-            quality: 'standard',
-            response_format: 'b64_json',
-          }),
-        })
-        const dalleData = await dalleRes.json()
-        if (!dalleRes.ok) throw new Error(dalleData.error?.message ?? `HTTP ${dalleRes.status}`)
-        const dalleB64 = dalleData.data?.[0]?.b64_json
-        if (!dalleB64) throw new Error('NO_IMAGE')
-        setTransformedImg(`data:image/png;base64,${dalleB64}`)
+        const editData = await editRes.json()
+        if (!editRes.ok) throw new Error(editData.error?.message ?? `HTTP ${editRes.status}`)
+        const b64img = editData.data?.[0]?.b64_json
+        const imgUrl = editData.data?.[0]?.url
+        if (b64img) setTransformedImg(`data:image/png;base64,${b64img}`)
+        else if (imgUrl) setTransformedImg(imgUrl)
+        else throw new Error('NO_IMAGE')
 
       } else {
         // Photo: gpt-image-1 edit (원본 구도 유지)
