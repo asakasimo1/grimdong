@@ -119,13 +119,7 @@ export default function TransformModal() {
     } catch (err) {
       console.error('[변환 에러]', err)
       Sentry.captureException(err, { extra: { context: 'AI 변환', mode, style } })
-      const isSafety = err.message?.toLowerCase().includes('safety') || err.message?.toLowerCase().includes('rejected')
-      toast.error(
-        isSafety
-          ? '이 그림은 AI가 변환하기 어려워요. 다른 그림으로 해볼까요? 🎨'
-          : '변환에 실패했어요. 다시 시도해주세요! 🔄',
-        { duration: 4000 }
-      )
+      toast.error(`[디버그] ${err.message}`, { duration: 10000 })
     } finally {
       setTransforming(false)
     }
