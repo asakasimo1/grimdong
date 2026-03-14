@@ -7,23 +7,19 @@ import styles from '../pages/DrawPage.module.css'
 const TRANSFORM_STYLES = [
   {
     key: '지브리', label: '🏯 지브리 스타일',
-    drawPrompt: 'Studio Ghibli anime illustration style, soft warm colors, painterly backgrounds, Hayao Miyazaki aesthetic, child-friendly,',
-    photoPrompt: 'Transform this photo into Studio Ghibli anime style. Maintain the exact composition and all subjects. Apply Ghibli characteristic soft warm colors, painterly look, and Miyazaki aesthetic.',
+    prompt: 'Studio Ghibli anime illustration style, soft warm colors, painterly backgrounds, Hayao Miyazaki aesthetic, child-friendly, beautiful,',
   },
   {
     key: '풍경화', label: '🏞️ 풍경화',
-    drawPrompt: 'beautiful landscape painting style, scenic nature background, lush greenery, blue sky, vibrant natural colors, impressionist landscape art,',
-    photoPrompt: 'Transform this photo into a beautiful landscape painting. Maintain the exact composition and all subjects. Enrich the background with scenic nature elements, lush colors, and impressionist landscape painting style.',
+    prompt: 'beautiful impressionist landscape painting style, scenic nature, lush greenery, blue sky, vibrant natural colors, fine art quality,',
   },
   {
     key: '스케치', label: '✏️ 스케치',
-    drawPrompt: 'elegant pencil sketch portrait style, beautiful and attractive faces, refined fine line drawing, soft shading, professional fashion illustration quality,',
-    photoPrompt: 'Convert this photo into an elegant pencil sketch portrait. Keep the original composition and all subjects. Maintain the overall facial structure and identity of each person, but apply subtle natural enhancement — slightly smoother skin, softened blemishes, gently refined features — while still looking like the same real person. Apply fine pencil line art with soft natural shading, realistic portrait sketch style.',
+    prompt: 'elegant pencil sketch illustration, fine line drawing, soft shading, professional art quality, detailed,',
   },
   {
     key: '화보', label: '✨ 화보 스타일',
-    drawPrompt: 'beautiful idealized portrait, attractive features, smooth skin, bright expressive eyes, elegant professional look,',
-    photoPrompt: 'Enhance this photo into a professional magazine cover quality portrait. Maintain the exact same composition and subjects. Apply idealized attractive features, smooth glowing skin, bright expressive eyes, and elegant editorial enhancement.',
+    prompt: 'professional magazine cover quality, beautiful portrait, smooth glowing skin, bright expressive eyes, elegant editorial photography style,',
   },
 ]
 
@@ -64,71 +60,46 @@ export default function TransformModal() {
     setTransforming(true)
     try {
       const styleObj = TRANSFORM_STYLES.find((s) => s.key === style)
-      const authHeader = `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+      const mimeType = canvasDataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg'
+      const b64 = canvasDataUrl.split(',')[1]
 
-      if (mode === 'draw') {
-        // Draw: gpt-image-1 edit (photo 모드와 동일한 방식으로 통일)
-        const pngBlob = await fetch(canvasDataUrl).then((r) => r.blob())
-        const file = new File([pngBlob], 'drawing.png', { type: 'image/png' })
-        const formData = new FormData()
-        formData.append('image', file)
-        formData.append('prompt', `${styleObj.drawPrompt} Strictly family-friendly, safe for children, no violence, no adult content.`)
-        formData.append('model', 'gpt-image-1')
-        formData.append('n', '1')
-        formData.append('size', '1024x1024')
-
-        const editRes = await fetch('https://api.openai.com/v1/images/edits', {
+      // Step 1: Gemini로 그림/사진 묘사
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        {
           method: 'POST',
-          headers: { 'Authorization': authHeader },
-          body: formData,
-        })
-        const editData = await editRes.json()
-        if (!editRes.ok) throw new Error(editData.error?.message ?? `HTTP ${editRes.status}`)
-        const b64img = editData.data?.[0]?.b64_json
-        const imgUrl = editData.data?.[0]?.url
-        if (b64img) setTransformedImg(`data:image/png;base64,${b64img}`)
-        else if (imgUrl) setTransformedImg(imgUrl)
-        else throw new Error('NO_IMAGE')
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [
+              { text: 'Describe this image in detail for AI image generation. Include all subjects, characters, colors, and scene composition. Reply in English only, under 80 words.' },
+              { inline_data: { mime_type: mimeType, data: b64 } },
+            ]}],
+            generationConfig: { maxOutputTokens: 150, temperature: 0.3 },
+          }),
+        }
+      )
+      const geminiData = await geminiRes.json()
+      if (!geminiRes.ok) throw new Error(geminiData.error?.message ?? `Gemini HTTP ${geminiRes.status}`)
+      const description = geminiData.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+        ?? "a colorful children's drawing with simple shapes"
 
-      } else {
-        // Photo: gpt-image-1 edit (원본 구도 유지)
-        const pngBlob = await fetch(canvasDataUrl).then((r) => r.blob())
-        const file = new File([pngBlob], 'photo.png', { type: 'image/png' })
+      // Step 2: Pollinations.ai로 스타일 변환 이미지 생성 (무료)
+      const fullPrompt = `${styleObj.prompt} ${description}. Child-friendly, safe for kids, vibrant, high quality.`
+      const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&seed=${Date.now()}&nologo=true&enhance=true`
 
-        const formData = new FormData()
-        formData.append('image', file)
-        formData.append('prompt', `${styleObj.photoPrompt} Strictly family-friendly, safe for all ages, appropriate content.`)
-        formData.append('model', 'gpt-image-1')
-        formData.append('n', '1')
-        formData.append('size', '1024x1024')
+      // 이미지 로드 확인
+      await new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = resolve
+        img.onerror = () => reject(new Error('이미지 생성 실패'))
+        img.src = imgUrl
+      })
+      setTransformedImg(imgUrl)
 
-        const editRes = await fetch('https://api.openai.com/v1/images/edits', {
-          method: 'POST',
-          headers: { 'Authorization': authHeader },
-          body: formData,
-        })
-        const editData = await editRes.json()
-        if (!editRes.ok) throw new Error(editData.error?.message ?? `HTTP ${editRes.status}`)
-
-        const b64img = editData.data?.[0]?.b64_json
-        const imgUrl = editData.data?.[0]?.url
-        if (b64img) setTransformedImg(`data:image/png;base64,${b64img}`)
-        else if (imgUrl) setTransformedImg(imgUrl)
-        else throw new Error('NO_IMAGE')
-      }
     } catch (err) {
       console.error('[변환 에러]', err)
       Sentry.captureException(err, { extra: { context: 'AI 변환', mode, style } })
-      const isSafety = err.message?.toLowerCase().includes('safety') || err.message?.toLowerCase().includes('rejected')
-      const isBilling = err.message?.toLowerCase().includes('billing') || err.message?.toLowerCase().includes('limit')
-      toast.error(
-        isBilling
-          ? 'AI 서비스 크레딧이 부족해요. 잠시 후 다시 시도해주세요! 💳'
-          : isSafety
-            ? '이 그림은 AI가 변환하기 어려워요. 다른 그림으로 해볼까요? 🎨'
-            : '변환에 실패했어요. 다시 시도해주세요! 🔄',
-        { duration: 4000 }
-      )
+      toast.error('변환에 실패했어요. 다시 시도해주세요! 🔄', { duration: 4000 })
     } finally {
       setTransforming(false)
     }
