@@ -83,7 +83,11 @@ export default function DrawPage() {
   const photoDataUrlRef = useRef(null)   // photo 모드 원본 데이터 URL 보관
   const user          = useAuthStore((s) => s.user)
   const openTransform = useTransformStore((s) => s.open)
-  const [canvasSize]  = useState(() => Math.min(window.innerWidth - 40, 480))
+  const [canvasSize]  = useState(() =>
+    window.innerWidth >= 768
+      ? Math.min(800, window.innerWidth - 40)
+      : window.innerWidth - 40
+  )
 
   const [profile, setProfile]   = useState(null)
   const [color, setColor]       = useState('#E74C3C')
@@ -117,7 +121,9 @@ export default function DrawPage() {
   // Fabric.js 초기화
   useEffect(() => {
     if (fabricRef.current) return
-    const size = Math.min(window.innerWidth - 40, 480)
+    const size = window.innerWidth >= 768
+      ? Math.min(800, window.innerWidth - 40)
+      : window.innerWidth - 40
     const canvas = new Canvas(canvasEl.current, {
       isDrawingMode: true,
       backgroundColor: '#FFFFFF',
