@@ -119,7 +119,16 @@ export default function TransformModal() {
     } catch (err) {
       console.error('[변환 에러]', err)
       Sentry.captureException(err, { extra: { context: 'AI 변환', mode, style } })
-      toast.error(`[디버그] ${err.message}`, { duration: 10000 })
+      const isSafety = err.message?.toLowerCase().includes('safety') || err.message?.toLowerCase().includes('rejected')
+      const isBilling = err.message?.toLowerCase().includes('billing') || err.message?.toLowerCase().includes('limit')
+      toast.error(
+        isBilling
+          ? 'AI 서비스 크레딧이 부족해요. 잠시 후 다시 시도해주세요! 💳'
+          : isSafety
+            ? '이 그림은 AI가 변환하기 어려워요. 다른 그림으로 해볼까요? 🎨'
+            : '변환에 실패했어요. 다시 시도해주세요! 🔄',
+        { duration: 4000 }
+      )
     } finally {
       setTransforming(false)
     }
