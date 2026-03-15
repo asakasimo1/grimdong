@@ -376,7 +376,7 @@ export default function DrawPage() {
               { type: 'image_url', image_url: { url: dataUrl } },
             ]},
           ],
-          max_tokens: 600,
+          max_tokens: 1200,
           temperature: 0.85,
         }),
       })
