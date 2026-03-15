@@ -359,29 +359,30 @@ export default function DrawPage() {
       const dataUrl = overrideDataUrl ?? canvas.toDataURL({ format: 'jpeg', quality: 0.85 })
       const b64 = dataUrl.split(',')[1]
 
-      const mimeType = dataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg'
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: buildPrompt(profile) }] },
-            contents: [{ parts: [
-              { text: `이 그림을 보고 ${profile?.name || '수아'}의 오늘 하루 그림일기를 써주세요.` },
-              { inline_data: { mime_type: mimeType, data: b64 } },
-            ]}],
-            generationConfig: {
-              responseMimeType: 'application/json',
-              temperature: 0.85,
-              maxOutputTokens: 600,
-            },
-          }),
-        }
-      )
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+          'HTTP-Referer': 'https://grimdong-fuee.vercel.app',
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-3.2-11b-vision-instruct:free',
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: buildPrompt(profile) },
+            { role: 'user', content: [
+              { type: 'text', text: `이 그림을 보고 ${profile?.name || '수아'}의 오늘 하루 그림일기를 써주세요.` },
+              { type: 'image_url', image_url: { url: dataUrl } },
+            ]},
+          ],
+          max_tokens: 600,
+          temperature: 0.85,
+        }),
+      })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error?.message ?? `HTTP ${res.status}`)
-      const story = JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text ?? '')
+      const story = JSON.parse(data.choices?.[0]?.message?.content ?? '')
 
       const blob = await fetch(dataUrl).then((r) => r.blob())
       const fileName = `${user.id}/${Date.now()}.jpg`

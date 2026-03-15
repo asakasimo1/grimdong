@@ -67,24 +67,27 @@ export default function TransformModal() {
       const mimeType = canvasDataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg'
       const b64 = canvasDataUrl.split(',')[1]
 
-      // Step 1: Gemini로 그림 묘사
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [
-              { text: 'Describe this image in detail for AI image generation. Include all subjects, characters, colors, and scene composition. Reply in English only, under 80 words.' },
-              { inline_data: { mime_type: mimeType, data: b64 } },
-            ]}],
-            generationConfig: { maxOutputTokens: 150, temperature: 0.3 },
-          }),
-        }
-      )
-      const geminiData = await geminiRes.json()
-      if (!geminiRes.ok) throw new Error(geminiData.error?.message ?? `Gemini HTTP ${geminiRes.status}`)
-      const description = geminiData.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+      // Step 1: OpenRouter Vision으로 그림 묘사
+      const visionRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+          'HTTP-Referer': 'https://grimdong-fuee.vercel.app',
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-3.2-11b-vision-instruct:free',
+          messages: [{ role: 'user', content: [
+            { type: 'text', text: 'Describe this image in detail for AI image generation. Include all subjects, characters, colors, and scene composition. Reply in English only, under 80 words.' },
+            { type: 'image_url', image_url: { url: canvasDataUrl } },
+          ]}],
+          max_tokens: 150,
+          temperature: 0.3,
+        }),
+      })
+      const visionData = await visionRes.json()
+      if (!visionRes.ok) throw new Error(visionData.error?.message ?? `OpenRouter HTTP ${visionRes.status}`)
+      const description = visionData.choices?.[0]?.message?.content?.trim()
         ?? "a colorful children's drawing with simple shapes"
 
       // Step 2: Pollinations.ai로 스타일 변환 이미지 생성
