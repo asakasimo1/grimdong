@@ -1,8 +1,13 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  const { prompt } = req.body
+  const { prompt, imageB64 } = req.body
   if (!prompt) return res.status(400).json({ error: 'prompt required' })
+
+  // img2img: FLUX.1-schnell에 이미지 + 프롬프트 전달
+  const body = imageB64
+    ? { inputs: prompt, parameters: { num_inference_steps: 4, image: imageB64, strength: 0.75 } }
+    : { inputs: prompt, parameters: { num_inference_steps: 4 } }
 
   const hfRes = await fetch(
     'https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell',
@@ -12,10 +17,7 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${process.env.VITE_HF_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        inputs: prompt,
-        parameters: { num_inference_steps: 4 },
-      }),
+      body: JSON.stringify(body),
     }
   )
 

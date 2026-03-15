@@ -64,17 +64,52 @@ export default function TransformModal() {
     setTransforming(true)
     try {
       const styleObj = TRANSFORM_STYLES.find((s) => s.key === style)
-      const mimeType = canvasDataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg'
-      const b64 = canvasDataUrl.split(',')[1]
 
-      // Hugging Face FLUX.1-schnell로 스타일 변환 이미지 생성
-      const prompt = mode === 'draw' ? styleObj.drawPrompt : styleObj.photoPrompt
-      const fullPrompt = `${prompt} Child-friendly, safe for kids, vibrant colors, high quality illustration.`
+      // Step 1: OpenRouter Vision으로 원본 이미지 묘사 (512px 압축)
+      const smallDataUrl = await new Promise((resolve) => {
+        const img = new Image()
+        img.onload = () => {
+          const c = document.createElement('canvas')
+          c.width = 512; c.height = 512
+          const ctx = c.getContext('2d')
+          ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 512, 512)
+          const s = Math.min(512 / img.width, 512 / img.height)
+          ctx.drawImage(img, (512 - img.width * s) / 2, (512 - img.height * s) / 2, img.width * s, img.height * s)
+          resolve(c.toDataURL('image/jpeg', 0.7))
+        }
+        img.src = canvasDataUrl
+      })
+
+      const visionRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+          'HTTP-Referer': 'https://grimdong-fuee.vercel.app',
+        },
+        body: JSON.stringify({
+          model: 'nvidia/nemotron-nano-12b-v2-vl:free',
+          messages: [{ role: 'user', content: [
+            { type: 'text', text: 'Describe this image precisely for AI image generation. Include subjects, poses, positions, colors, background, and composition details. English only, under 100 words.' },
+            { type: 'image_url', image_url: { url: smallDataUrl } },
+          ]}],
+          max_tokens: 200,
+          temperature: 0.2,
+        }),
+      })
+      const visionData = await visionRes.json()
+      const description = visionData.choices?.[0]?.message?.content?.trim()
+        || 'a colorful artwork with simple shapes and bright colors'
+
+      // Step 2: HuggingFace FLUX img2img — 원본 구도 유지 + 스타일 변환
+      const stylePrompt = mode === 'draw' ? styleObj.drawPrompt : styleObj.photoPrompt
+      const fullPrompt = `${stylePrompt} ${description}. Child-friendly, safe for kids, vibrant, high quality.`
+      const imageB64 = smallDataUrl.split(',')[1]
 
       const hfRes = await fetch('/api/transform', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: fullPrompt }),
+        body: JSON.stringify({ prompt: fullPrompt, imageB64 }),
       })
       if (!hfRes.ok) {
         const err = await hfRes.json().catch(() => ({}))
