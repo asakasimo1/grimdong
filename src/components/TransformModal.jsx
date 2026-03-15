@@ -76,7 +76,7 @@ export default function TransformModal() {
           'HTTP-Referer': 'https://grimdong-fuee.vercel.app',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-3.2-11b-vision-instruct:free',
+          model: 'nvidia/nemotron-nano-12b-v2-vl:free',
           messages: [{ role: 'user', content: [
             { type: 'text', text: 'Describe this image in detail for AI image generation. Include all subjects, characters, colors, and scene composition. Reply in English only, under 80 words.' },
             { type: 'image_url', image_url: { url: canvasDataUrl } },
