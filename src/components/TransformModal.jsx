@@ -67,57 +67,29 @@ export default function TransformModal() {
       const mimeType = canvasDataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg'
       const b64 = canvasDataUrl.split(',')[1]
 
-      // Step 1: OpenRouter Vision으로 그림 묘사 (이미지 512px로 압축)
-      const smallDataUrl = await new Promise((resolve) => {
-        const img = new Image()
-        img.onload = () => {
-          const c = document.createElement('canvas')
-          c.width = 512; c.height = 512
-          const ctx = c.getContext('2d')
-          ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 512, 512)
-          const s = Math.min(512 / img.width, 512 / img.height)
-          ctx.drawImage(img, (512 - img.width * s) / 2, (512 - img.height * s) / 2, img.width * s, img.height * s)
-          resolve(c.toDataURL('image/jpeg', 0.7))
-        }
-        img.src = canvasDataUrl
-      })
-      const visionRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-          'HTTP-Referer': 'https://grimdong-fuee.vercel.app',
-        },
-        body: JSON.stringify({
-          model: 'nvidia/nemotron-nano-12b-v2-vl:free',
-          messages: [{ role: 'user', content: [
-            { type: 'text', text: 'Describe this image in detail for AI image generation. Include all subjects, characters, colors, and scene composition. Reply in English only, under 80 words.' },
-            { type: 'image_url', image_url: { url: smallDataUrl } },
-          ]}],
-          max_tokens: 150,
-          temperature: 0.3,
-        }),
-      })
-      const visionData = await visionRes.json()
-      if (!visionRes.ok) throw new Error(visionData.error?.message ?? `OpenRouter HTTP ${visionRes.status}`)
-      const description = visionData.choices?.[0]?.message?.content?.trim()
-        || "a colorful children's drawing with simple shapes"
-      console.log('[변환] 묘사:', description)
-
-      // Step 2: Pollinations.ai로 스타일 변환 이미지 생성
+      // Hugging Face FLUX.1-schnell로 스타일 변환 이미지 생성
       const prompt = mode === 'draw' ? styleObj.drawPrompt : styleObj.photoPrompt
-      const fullPrompt = `${prompt} ${description}. Child-friendly, safe for kids, vibrant, high quality.`
-        .replace(/'/g, '').replace(/"/g, '')
-      const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&seed=${Date.now()}&nologo=true`
+      const fullPrompt = `${prompt} Child-friendly, safe for kids, vibrant colors, high quality illustration.`
 
-      const imgRes = await fetch(imgUrl)
-      if (!imgRes.ok) throw new Error(`이미지 생성 실패 (HTTP ${imgRes.status})`)
-      const contentType = imgRes.headers.get('content-type') ?? ''
-      if (!contentType.startsWith('image/')) {
-        const text = await imgRes.text()
-        throw new Error(`이미지 아님: ${contentType} — ${text.slice(0, 100)}`)
+      const hfRes = await fetch(
+        'https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_HF_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            inputs: fullPrompt,
+            parameters: { num_inference_steps: 4 },
+          }),
+        }
+      )
+      if (!hfRes.ok) {
+        const errText = await hfRes.text()
+        throw new Error(`이미지 생성 실패 (HTTP ${hfRes.status}): ${errText.slice(0, 100)}`)
       }
-      const blob = await imgRes.blob()
+      const blob = await hfRes.blob()
       setTransformedImg(URL.createObjectURL(blob))
 
     } catch (err) {
