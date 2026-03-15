@@ -88,12 +88,13 @@ export default function TransformModal() {
       const visionData = await visionRes.json()
       if (!visionRes.ok) throw new Error(visionData.error?.message ?? `OpenRouter HTTP ${visionRes.status}`)
       const description = visionData.choices?.[0]?.message?.content?.trim()
-        ?? "a colorful children's drawing with simple shapes"
+        || "a colorful children's drawing with simple shapes"
+      console.log('[변환] 묘사:', description)
 
       // Step 2: Pollinations.ai로 스타일 변환 이미지 생성
       const prompt = mode === 'draw' ? styleObj.drawPrompt : styleObj.photoPrompt
       const fullPrompt = `${prompt} ${description}. Child-friendly, safe for kids, vibrant, high quality.`
-      const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&seed=${Date.now()}&nologo=true&enhance=true`
+      const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&seed=${Date.now()}&nologo=true&model=flux-schnell`
 
       const imgRes = await fetch(imgUrl)
       if (!imgRes.ok) throw new Error(`이미지 생성 실패 (HTTP ${imgRes.status})`)
