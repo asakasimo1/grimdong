@@ -5,9 +5,7 @@ export default async function handler(req, res) {
   if (!prompt) return res.status(400).json({ error: 'prompt required' })
 
   // img2img: FLUX.1-schnell에 이미지 + 프롬프트 전달
-  const body = imageB64
-    ? { inputs: prompt, parameters: { num_inference_steps: 4, image: imageB64, strength: 0.75 } }
-    : { inputs: prompt, parameters: { num_inference_steps: 4 } }
+  const body = { inputs: prompt, parameters: { num_inference_steps: 4 } }
 
   const hfRes = await fetch(
     'https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell',
