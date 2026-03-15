@@ -71,23 +71,14 @@ export default function TransformModal() {
       const prompt = mode === 'draw' ? styleObj.drawPrompt : styleObj.photoPrompt
       const fullPrompt = `${prompt} Child-friendly, safe for kids, vibrant colors, high quality illustration.`
 
-      const hfRes = await fetch(
-        'https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_HF_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            inputs: fullPrompt,
-            parameters: { num_inference_steps: 4 },
-          }),
-        }
-      )
+      const hfRes = await fetch('/api/transform', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: fullPrompt }),
+      })
       if (!hfRes.ok) {
-        const errText = await hfRes.text()
-        throw new Error(`이미지 생성 실패 (HTTP ${hfRes.status}): ${errText.slice(0, 100)}`)
+        const err = await hfRes.json().catch(() => ({}))
+        throw new Error(`이미지 생성 실패 (HTTP ${hfRes.status}): ${err.error ?? ''}`)
       }
       const blob = await hfRes.blob()
       setTransformedImg(URL.createObjectURL(blob))
