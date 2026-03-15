@@ -96,7 +96,12 @@ export default function TransformModal() {
       const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&seed=${Date.now()}&nologo=true&enhance=true`
 
       const imgRes = await fetch(imgUrl)
-      if (!imgRes.ok) throw new Error('이미지 생성 실패')
+      if (!imgRes.ok) throw new Error(`이미지 생성 실패 (HTTP ${imgRes.status})`)
+      const contentType = imgRes.headers.get('content-type') ?? ''
+      if (!contentType.startsWith('image/')) {
+        const text = await imgRes.text()
+        throw new Error(`이미지 아님: ${contentType} — ${text.slice(0, 100)}`)
+      }
       const blob = await imgRes.blob()
       setTransformedImg(URL.createObjectURL(blob))
 
