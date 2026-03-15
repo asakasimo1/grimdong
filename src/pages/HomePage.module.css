@@ -89,13 +89,43 @@
 
 .drawIcon { font-size: 1.4rem; }
 
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
 .sectionTitle {
   font-size: 0.9rem;
   font-weight: 600;
-  margin-bottom: 14px;
   color: var(--color-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.viewToggle {
+  display: flex;
+  gap: 4px;
+}
+
+.viewBtn {
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.viewBtnActive {
+  border-color: var(--color-primary);
+  background: var(--color-secondary);
 }
 
 .emptyBox {
@@ -220,3 +250,96 @@
   min-width: 52px;
   text-align: center;
 }
+
+/* ── 달력 뷰 ── */
+.calendar {
+  width: 100%;
+}
+
+.calHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.calNavBtn {
+  background: var(--color-surface);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+}
+.calNavBtn:hover { opacity: 0.7; }
+
+.calMonthLabel {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.calWeekRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 6px;
+}
+
+.calWeekDay {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  padding: 4px 0;
+}
+
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calCell {
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: var(--color-surface);
+  cursor: default;
+  transition: opacity 0.15s;
+}
+
+.calCellEmpty {
+  background: transparent;
+}
+
+.calCellHasStory {
+  background: #EEF1FF;
+  cursor: pointer;
+}
+.calCellHasStory:hover { opacity: 0.8; }
+
+.calDayNum {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.calEmoji {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.sun { color: #e74c3c; }
+.sat { color: #3D5AFE; }

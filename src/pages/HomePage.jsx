@@ -21,6 +21,8 @@ const MESSAGES = [
   '붓 들고 오늘의 주인공이 되자! 🌈',
 ]
 
+const MONTH_NAMES = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월']
+
 const formatDate = (iso) => {
   const d = new Date(iso)
   return `${d.getMonth() + 1}월 ${d.getDate()}일`
@@ -34,6 +36,13 @@ export default function HomePage() {
   const [total,     setTotal]     = useState(0)
   const [page,      setPage]      = useState(0)
   const [loading,   setLoading]   = useState(true)
+
+  // 달력 뷰
+  const [viewMode,    setViewMode]    = useState('list')
+  const [calYear,     setCalYear]     = useState(() => new Date().getFullYear())
+  const [calMonth,    setCalMonth]    = useState(() => new Date().getMonth())
+  const [calStories,  setCalStories]  = useState([])
+  const [calLoading,  setCalLoading]  = useState(false)
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
@@ -67,6 +76,20 @@ export default function HomePage() {
 
   useEffect(() => { fetchStories(page) }, [fetchStories, page])
 
+  // 달력 스토리 로드
+  useEffect(() => {
+    if (!user || viewMode !== 'calendar') return
+    setCalLoading(true)
+    const start = new Date(calYear, calMonth, 1).toISOString()
+    const end   = new Date(calYear, calMonth + 1, 0, 23, 59, 59, 999).toISOString()
+    supabase.from('stories')
+      .select('id, emotion, created_at')
+      .eq('user_id', user.id)
+      .gte('created_at', start)
+      .lte('created_at', end)
+      .then(({ data }) => { setCalStories(data ?? []); setCalLoading(false) })
+  }, [user, viewMode, calYear, calMonth])
+
   const handleDelete = async (e, story) => {
     e.stopPropagation()
     if (!window.confirm(`"${story.title}" 일기를 삭제할까요?`)) return
@@ -84,6 +107,67 @@ export default function HomePage() {
     } catch {}
 
     fetchStories(page)
+  }
+
+  const handleCalPrev = () => {
+    if (calMonth === 0) { setCalYear((y) => y - 1); setCalMonth(11) }
+    else setCalMonth((m) => m - 1)
+  }
+  const handleCalNext = () => {
+    if (calMonth === 11) { setCalYear((y) => y + 1); setCalMonth(0) }
+    else setCalMonth((m) => m + 1)
+  }
+
+  const renderCalendar = () => {
+    const firstDay    = new Date(calYear, calMonth, 1).getDay()
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate()
+    const storyMap    = {}
+    calStories.forEach((s) => {
+      const d = new Date(s.created_at).getDate()
+      if (!storyMap[d]) storyMap[d] = s
+    })
+
+    const cells = []
+    for (let i = 0; i < firstDay; i++) cells.push(null)
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+
+    return (
+      <div className={styles.calendar}>
+        <div className={styles.calHeader}>
+          <button className={styles.calNavBtn} onClick={handleCalPrev}>‹</button>
+          <span className={styles.calMonthLabel}>{calYear}년 {MONTH_NAMES[calMonth]}</span>
+          <button className={styles.calNavBtn} onClick={handleCalNext}>›</button>
+        </div>
+        <div className={styles.calWeekRow}>
+          {['일','월','화','수','목','금','토'].map((d, i) => (
+            <span key={d} className={`${styles.calWeekDay} ${i === 0 ? styles.sun : i === 6 ? styles.sat : ''}`}>{d}</span>
+          ))}
+        </div>
+        {calLoading ? (
+          <div className={styles.emptyBox} style={{ marginTop: 16 }}>불러오는 중...</div>
+        ) : (
+          <div className={styles.calGrid}>
+            {cells.map((day, i) => {
+              const story  = day ? storyMap[day] : null
+              const isSun  = i % 7 === 0
+              const isSat  = i % 7 === 6
+              return (
+                <div key={i}
+                  className={`${styles.calCell} ${story ? styles.calCellHasStory : ''} ${!day ? styles.calCellEmpty : ''}`}
+                  onClick={() => story && navigate(`/story/${story.id}`)}>
+                  {day && (
+                    <>
+                      <span className={`${styles.calDayNum} ${isSun ? styles.sun : isSat ? styles.sat : ''}`}>{day}</span>
+                      {story && <span className={styles.calEmoji}>{EMOTION_EMOJI[story.emotion] ?? '💛'}</span>}
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
   }
 
   const displayName = childName || user?.user_metadata?.name || '친구'
@@ -110,41 +194,54 @@ export default function HomePage() {
       </button>
 
       <section className={styles.recentWrap}>
-        <h2 className={styles.sectionTitle}>
-          최근 나의 그림일기
-          {total > 0 && <span className={styles.totalCount}>{total}</span>}
-        </h2>
-        {loading ? (
-          <div className={styles.emptyBox}>불러오는 중...</div>
-        ) : stories.length === 0 ? (
-          <div className={styles.emptyBox}>
-            <p>아직 그림일기가 없어요.</p>
-            <p>첫 그림을 그려보세요! ✨</p>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>
+            나의 그림일기
+            {total > 0 && <span className={styles.totalCount}>{total}</span>}
+          </h2>
+          <div className={styles.viewToggle}>
+            <button
+              className={`${styles.viewBtn} ${viewMode === 'list' ? styles.viewBtnActive : ''}`}
+              onClick={() => setViewMode('list')}>📋</button>
+            <button
+              className={`${styles.viewBtn} ${viewMode === 'calendar' ? styles.viewBtnActive : ''}`}
+              onClick={() => setViewMode('calendar')}>📅</button>
           </div>
-        ) : (
-          <>
-            <ul className={styles.storyList}>
-              {stories.map((s) => (
-                <li key={s.id} className={styles.storyItem} onClick={() => navigate(`/story/${s.id}`)}>
-                  <img src={s.image_url} alt={s.title} className={styles.storyThumb} />
-                  <div className={styles.storyInfo}>
-                    <span className={styles.storyTitle}>{s.title}</span>
-                    <span className={styles.storySub}>
-                      {EMOTION_EMOJI[s.emotion] ?? '💛'} {s.emotion} · {formatDate(s.created_at)}
-                    </span>
-                  </div>
-                  <button className={styles.deleteBtn} onClick={(e) => handleDelete(e, s)}>🗑️</button>
-                </li>
-              ))}
-            </ul>
-            {totalPages > 1 && (
-              <div className={styles.pagination}>
-                <button className={styles.pageBtn} onClick={() => setPage((p) => p - 1)} disabled={page === 0}>‹</button>
-                <span className={styles.pageInfo}>{page + 1} / {totalPages}</span>
-                <button className={styles.pageBtn} onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>›</button>
-              </div>
-            )}
-          </>
+        </div>
+
+        {viewMode === 'calendar' ? renderCalendar() : (
+          loading ? (
+            <div className={styles.emptyBox}>불러오는 중...</div>
+          ) : stories.length === 0 ? (
+            <div className={styles.emptyBox}>
+              <p>아직 그림일기가 없어요.</p>
+              <p>첫 그림을 그려보세요! ✨</p>
+            </div>
+          ) : (
+            <>
+              <ul className={styles.storyList}>
+                {stories.map((s) => (
+                  <li key={s.id} className={styles.storyItem} onClick={() => navigate(`/story/${s.id}`)}>
+                    <img src={s.image_url} alt={s.title} className={styles.storyThumb} />
+                    <div className={styles.storyInfo}>
+                      <span className={styles.storyTitle}>{s.title}</span>
+                      <span className={styles.storySub}>
+                        {EMOTION_EMOJI[s.emotion] ?? '💛'} {s.emotion} · {formatDate(s.created_at)}
+                      </span>
+                    </div>
+                    <button className={styles.deleteBtn} onClick={(e) => handleDelete(e, s)}>🗑️</button>
+                  </li>
+                ))}
+              </ul>
+              {totalPages > 1 && (
+                <div className={styles.pagination}>
+                  <button className={styles.pageBtn} onClick={() => setPage((p) => p - 1)} disabled={page === 0}>‹</button>
+                  <span className={styles.pageInfo}>{page + 1} / {totalPages}</span>
+                  <button className={styles.pageBtn} onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>›</button>
+                </div>
+              )}
+            </>
+          )
         )}
       </section>
     </div>
