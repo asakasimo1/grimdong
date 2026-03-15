@@ -359,29 +359,23 @@ export default function DrawPage() {
       const dataUrl = overrideDataUrl ?? canvas.toDataURL({ format: 'jpeg', quality: 0.85 })
       const b64 = dataUrl.split(',')[1]
 
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-          'HTTP-Referer': 'https://grimdong-fuee.vercel.app',
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}` },
         body: JSON.stringify({
-          model: 'nvidia/nemotron-nano-12b-v2-vl:free',
+          model: 'gpt-4o',
           response_format: { type: 'json_object' },
           messages: [
             { role: 'system', content: buildPrompt(profile) },
             { role: 'user', content: [
               { type: 'text', text: `이 그림을 보고 ${profile?.name || '수아'}의 오늘 하루 그림일기를 써주세요.` },
-              { type: 'image_url', image_url: { url: dataUrl } },
+              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'low' } },
             ]},
           ],
-          max_tokens: 1200,
-          temperature: 0.85,
+          max_tokens: 600, temperature: 0.85,
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error?.message ?? `HTTP ${res.status}`)
       const story = JSON.parse(data.choices?.[0]?.message?.content ?? '')
 
       const blob = await fetch(dataUrl).then((r) => r.blob())

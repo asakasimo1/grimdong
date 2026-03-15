@@ -64,65 +64,82 @@ export default function TransformModal() {
     setTransforming(true)
     try {
       const styleObj = TRANSFORM_STYLES.find((s) => s.key === style)
+      const authHeader = `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
 
-      // Step 1: OpenRouter Vision으로 원본 이미지 묘사 (512px 압축)
-      const smallDataUrl = await new Promise((resolve) => {
-        const img = new Image()
-        img.onload = () => {
-          const c = document.createElement('canvas')
-          c.width = 512; c.height = 512
-          const ctx = c.getContext('2d')
-          ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 512, 512)
-          const s = Math.min(512 / img.width, 512 / img.height)
-          ctx.drawImage(img, (512 - img.width * s) / 2, (512 - img.height * s) / 2, img.width * s, img.height * s)
-          resolve(c.toDataURL('image/jpeg', 0.7))
-        }
-        img.src = canvasDataUrl
-      })
+      if (mode === 'draw') {
+        // Draw: GPT-4o Vision으로 묘사 → DALL-E 3 생성 (안전 필터 우회)
+        const b64 = canvasDataUrl.split(',')[1]
 
-      const visionRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-          'HTTP-Referer': 'https://grimdong-fuee.vercel.app',
-        },
-        body: JSON.stringify({
-          model: 'nvidia/nemotron-nano-12b-v2-vl:free',
-          messages: [{ role: 'user', content: [
-            { type: 'text', text: 'Describe this image precisely for AI image generation. Include subjects, poses, positions, colors, background, and composition details. English only, under 100 words.' },
-            { type: 'image_url', image_url: { url: smallDataUrl } },
-          ]}],
-          max_tokens: 200,
-          temperature: 0.2,
-        }),
-      })
-      const visionData = await visionRes.json()
-      const description = visionData.choices?.[0]?.message?.content?.trim()
-        || 'a colorful artwork with simple shapes and bright colors'
+        const visionRes = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+          body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'text', text: "Describe this child's drawing briefly in English for image generation. Identify objects, characters, colors, and scene. Under 80 words." },
+                { type: 'image_url', image_url: { url: `data:image/png;base64,${b64}`, detail: 'low' } },
+              ],
+            }],
+            max_tokens: 120,
+          }),
+        })
+        const visionData = await visionRes.json()
+        const description = visionData.choices?.[0]?.message?.content ?? "a colorful children's drawing with simple shapes"
 
-      // Step 2: HuggingFace FLUX img2img — 원본 구도 유지 + 스타일 변환
-      const stylePrompt = mode === 'draw' ? styleObj.drawPrompt : styleObj.photoPrompt
-      const fullPrompt = `${stylePrompt} ${description}. Child-friendly, safe for kids, vibrant, high quality.`
-      const imageB64 = smallDataUrl.split(',')[1]
+        const dalleRes = await fetch('https://api.openai.com/v1/images/generations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+          body: JSON.stringify({
+            model: 'dall-e-3',
+            prompt: `${styleObj.drawPrompt} The scene: ${description}. Strictly family-friendly, safe for children, no violence, no adult content.`,
+            n: 1,
+            size: '1024x1024',
+            quality: 'standard',
+            response_format: 'b64_json',
+          }),
+        })
+        const dalleData = await dalleRes.json()
+        if (!dalleRes.ok) throw new Error(dalleData.error?.message ?? `HTTP ${dalleRes.status}`)
+        const dalleB64 = dalleData.data?.[0]?.b64_json
+        if (!dalleB64) throw new Error('NO_IMAGE')
+        setTransformedImg(`data:image/png;base64,${dalleB64}`)
 
-      const hfRes = await fetch('/api/transform', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: fullPrompt, imageB64 }),
-      })
-      if (!hfRes.ok) {
-        const err = await hfRes.json().catch(() => ({}))
-        throw new Error(`이미지 생성 실패 (HTTP ${hfRes.status}): ${err.error ?? ''}`)
+      } else {
+        // Photo: gpt-image-1 edit (원본 구도 유지)
+        const pngBlob = await fetch(canvasDataUrl).then((r) => r.blob())
+        const file = new File([pngBlob], 'photo.png', { type: 'image/png' })
+
+        const formData = new FormData()
+        formData.append('image', file)
+        formData.append('prompt', `${styleObj.photoPrompt} Strictly family-friendly, safe for all ages, appropriate content.`)
+        formData.append('model', 'gpt-image-1')
+        formData.append('n', '1')
+        formData.append('size', '1024x1024')
+
+        const editRes = await fetch('https://api.openai.com/v1/images/edits', {
+          method: 'POST',
+          headers: { 'Authorization': authHeader },
+          body: formData,
+        })
+        const editData = await editRes.json()
+        if (!editRes.ok) throw new Error(editData.error?.message ?? `HTTP ${editRes.status}`)
+
+        const b64img = editData.data?.[0]?.b64_json
+        const imgUrl = editData.data?.[0]?.url
+        if (b64img) setTransformedImg(`data:image/png;base64,${b64img}`)
+        else if (imgUrl) setTransformedImg(imgUrl)
+        else throw new Error('NO_IMAGE')
       }
-      const blob = await hfRes.blob()
-      setTransformedImg(URL.createObjectURL(blob))
-
     } catch (err) {
       console.error('[변환 에러]', err)
       Sentry.captureException(err, { extra: { context: 'AI 변환', mode, style } })
+      const isSafety = err.message?.toLowerCase().includes('safety') || err.message?.toLowerCase().includes('rejected')
       toast.error(
-        '변환에 실패했어요. 다시 시도해주세요! 🔄',
+        isSafety
+          ? '이 그림은 AI가 변환하기 어려워요. 다른 그림으로 해볼까요? 🎨'
+          : '변환에 실패했어요. 다시 시도해주세요! 🔄',
         { duration: 4000 }
       )
     } finally {
