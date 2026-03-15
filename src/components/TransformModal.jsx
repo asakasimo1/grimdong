@@ -94,13 +94,6 @@ export default function TransformModal() {
       const prompt = mode === 'draw' ? styleObj.drawPrompt : styleObj.photoPrompt
       const fullPrompt = `${prompt} ${description}. Child-friendly, safe for kids, vibrant, high quality.`
       const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&seed=${Date.now()}&nologo=true&enhance=true`
-
-      await new Promise((resolve, reject) => {
-        const img = new Image()
-        img.onload = resolve
-        img.onerror = () => reject(new Error('이미지 생성 실패'))
-        img.src = imgUrl
-      })
       setTransformedImg(imgUrl)
 
     } catch (err) {
