@@ -67,7 +67,20 @@ export default function TransformModal() {
       const mimeType = canvasDataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg'
       const b64 = canvasDataUrl.split(',')[1]
 
-      // Step 1: OpenRouter Vision으로 그림 묘사
+      // Step 1: OpenRouter Vision으로 그림 묘사 (이미지 512px로 압축)
+      const smallDataUrl = await new Promise((resolve) => {
+        const img = new Image()
+        img.onload = () => {
+          const c = document.createElement('canvas')
+          c.width = 512; c.height = 512
+          const ctx = c.getContext('2d')
+          ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 512, 512)
+          const s = Math.min(512 / img.width, 512 / img.height)
+          ctx.drawImage(img, (512 - img.width * s) / 2, (512 - img.height * s) / 2, img.width * s, img.height * s)
+          resolve(c.toDataURL('image/jpeg', 0.7))
+        }
+        img.src = canvasDataUrl
+      })
       const visionRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -79,7 +92,7 @@ export default function TransformModal() {
           model: 'nvidia/nemotron-nano-12b-v2-vl:free',
           messages: [{ role: 'user', content: [
             { type: 'text', text: 'Describe this image in detail for AI image generation. Include all subjects, characters, colors, and scene composition. Reply in English only, under 80 words.' },
-            { type: 'image_url', image_url: { url: canvasDataUrl } },
+            { type: 'image_url', image_url: { url: smallDataUrl } },
           ]}],
           max_tokens: 150,
           temperature: 0.3,
@@ -94,7 +107,8 @@ export default function TransformModal() {
       // Step 2: Pollinations.ai로 스타일 변환 이미지 생성
       const prompt = mode === 'draw' ? styleObj.drawPrompt : styleObj.photoPrompt
       const fullPrompt = `${prompt} ${description}. Child-friendly, safe for kids, vibrant, high quality.`
-      const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&seed=${Date.now()}&nologo=true&model=flux-schnell`
+        .replace(/'/g, '').replace(/"/g, '')
+      const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&seed=${Date.now()}&nologo=true`
 
       const imgRes = await fetch(imgUrl)
       if (!imgRes.ok) throw new Error(`이미지 생성 실패 (HTTP ${imgRes.status})`)
