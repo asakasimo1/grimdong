@@ -12,7 +12,7 @@ export default function SettingsPage() {
   const { user } = useAuthStore()
 
   const [name,    setName]    = useState('')
-  const [grade,   setGrade]   = useState('1학년')
+  const [age,     setAge]     = useState('8')
   const [gender,  setGender]  = useState('여자')
   const [likes,   setLikes]   = useState([])
   const [friends, setFriends] = useState([])
@@ -28,7 +28,7 @@ export default function SettingsPage() {
       .then(({ data }) => {
         if (!data) return
         setName(data.name ?? '')
-        setGrade(data.grade ?? '1학년')
+        setAge(data.age ?? '8')
         setGender(data.gender ?? '여자')
         setLikes(data.likes ?? [])
         setFriends(data.friends ?? [])
@@ -56,7 +56,7 @@ export default function SettingsPage() {
     const { error } = await supabase.from('profiles').upsert({
       id: user.id,
       name: name.trim(),
-      grade,
+      age,
       gender,
       likes,
       friends,
@@ -92,16 +92,16 @@ export default function SettingsPage() {
           />
         </div>
 
-        {/* 학년 */}
+        {/* 나이 */}
         <div className={styles.field}>
-          <label className={styles.label}>🎒 학년</label>
+          <label className={styles.label}>🎂 나이</label>
           <div className={styles.btnGroup}>
-            {['1학년', '2학년'].map((g) => (
+            {['5', '6', '7', '8', '9', '10'].map((a) => (
               <button
-                key={g}
-                className={`${styles.optionBtn} ${grade === g ? styles.optionBtnActive : ''}`}
-                onClick={() => setGrade(g)}
-              >{g}</button>
+                key={a}
+                className={`${styles.optionBtn} ${age === a ? styles.optionBtnActive : ''}`}
+                onClick={() => setAge(a)}
+              >{a}세</button>
             ))}
           </div>
         </div>

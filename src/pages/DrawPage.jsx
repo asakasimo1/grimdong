@@ -20,16 +20,15 @@ const EraserIcon = () => (
 
 function buildPrompt(profile) {
   const name    = profile?.name    || '수아'
-  const grade   = profile?.grade   || '1학년'
+  const age     = profile?.age     || '8'
   const gender  = profile?.gender  || '여자'
   const likes   = profile?.likes?.length   ? profile.likes.join(', ')   : null
   const friends = profile?.friends?.length ? profile.friends.join(', ') : null
   const family  = profile?.family?.length  ? profile.family.join(', ')  : null
   const pet     = profile?.pet || null
-  const gradeNum = grade.replace('학년', '')
 
   const info = [
-    `이름: ${name}`, `학년: 초등학교 ${grade}`, `성별: ${gender}아이`,
+    `이름: ${name}`, `나이: ${age}세`, `성별: ${gender}아이`,
     likes   ? `좋아하는 것: ${likes}`   : null,
     friends ? `친한 친구: ${friends}`   : null,
     family  ? `가족 구성: ${family}`    : null,
@@ -46,7 +45,7 @@ ${info}
 {"title":"일기 제목(8자 이내)","story":"일기 본문","emotion":"주요 감정 1단어","keywords":["요소1","요소2","요소3"],"char_count":글자수}
 
 【story 규칙】
-① 180~230자 (공백 포함) ② 문장 15자 이내 ③ 초등${gradeNum}학년 수준
+① 180~230자 (공백 포함) ② 문장 15자 이내 ③ ${age}세 어린이 수준
 ④ "오늘은" 또는 "나는"으로 시작 ⑤ "~했어요"체
 ⑥ "나는"과 "${name}은/는"을 자연스럽게 번갈아 사용
 ⑦ 학교·친구·가족·음식·놀이 등 실제 일상 소재 사용${likes ? `\n⑦-1 좋아하는 것(${likes}) 중 하나를 소재로 활용` : ''}${friends ? `\n⑦-2 친구(${friends}) 중 하나를 자연스럽게 등장` : ''}${family ? `\n⑦-3 가족(${family}) 중 누군가를 자연스럽게 등장` : ''}${pet ? `\n⑦-4 반려동물 ${pet}을/를 소재로 활용 가능` : ''}
