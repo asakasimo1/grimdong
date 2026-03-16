@@ -150,6 +150,12 @@ chore: 설정, 패키지 변경
 
 ## Claude 작업 지침
 
+### ⚠️ 커밋 필수 규칙
+**작업이 완료되면 반드시 git commit을 실행한다.**
+- 사용자가 명시적으로 "커밋하지 마" 라고 하지 않는 한, 모든 작업 완료 후 자동 커밋
+- `git add` + `git commit` 실행 → post-commit 훅이 자동으로 `git push origin app` 처리
+- 커밋 메시지는 한국어로, 변경 내용을 명확히 기술
+
 ### 작업 전 확인
 1. 현재 브랜치가 `app`인지 확인 (`git branch`)
 2. 최신 코드인지 확인 (`git pull origin app`)
