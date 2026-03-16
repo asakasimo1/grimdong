@@ -27,6 +27,15 @@ function compressImage(file, size = 800) {
   })
 }
 
+// 한글 키 → ASCII 파일명 (Supabase Storage는 한글 경로 미지원)
+const KEY_ASCII = {
+  '아이': 'child', '엄마': 'mom', '아빠': 'dad',
+  '할머니': 'grandma', '할아버지': 'grandpa',
+  '오빠': 'brother_o', '언니': 'sister_u',
+  '남동생': 'brother_y', '여동생': 'sister_y',
+}
+const toAscii = (key) => KEY_ASCII[key] ?? key.replace(/[^\w]/g, '_')
+
 // 분석된 인물 이름 → photos 키 매핑
 function resolvePhotoKey(personName, childName) {
   if (!personName) return null
@@ -89,7 +98,7 @@ export default function PhotoRequestModal({ elements, profile, onClose, onGenera
     setUploading(key)
     try {
       const blob = await compressImage(file)
-      const path = `${user.id}/person_${key}.jpg`
+      const path = `${user.id}/person_${toAscii(key)}.jpg`
 
       const { error: upErr } = await supabase.storage
         .from('profile-photos')

@@ -33,6 +33,15 @@ const PHOTO_SLOTS = [
   { key: '아빠', label: '👨 아빠', hint: '선택' },
 ]
 
+// 한글 키 → ASCII 파일명 (Supabase Storage는 한글 경로 미지원)
+const KEY_ASCII = {
+  '아이': 'child', '엄마': 'mom', '아빠': 'dad',
+  '할머니': 'grandma', '할아버지': 'grandpa',
+  '오빠': 'brother_o', '언니': 'sister_u',
+  '남동생': 'brother_y', '여동생': 'sister_y',
+}
+const toAscii = (key) => KEY_ASCII[key] ?? key.replace(/[^\w]/g, '_')
+
 const FAMILY_OPTIONS = ['엄마', '아빠', '오빠', '언니', '남동생', '여동생', '할머니', '할아버지']
 
 export default function SettingsPage() {
@@ -92,7 +101,7 @@ export default function SettingsPage() {
     setUploadingKey(key)
     try {
       const blob = await compressImage(file)
-      const path = `${user.id}/person_${key}.jpg`
+      const path = `${user.id}/person_${toAscii(key)}.jpg`
       const { error: upErr } = await supabase.storage
         .from('profile-photos')
         .upload(path, blob, { contentType: 'image/jpeg', upsert: true })
