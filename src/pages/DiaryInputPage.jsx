@@ -45,7 +45,7 @@ export default function DiaryInputPage() {
 추출:
 1. "persons": 등장 인물 이름/호칭 배열 (예: ["${childName}", "엄마", "지유"])
 2. "places": 등장 장소 배열 (예: ["놀이터", "공원"])
-3. "imagePrompt": 이 일기의 주요 장면 영문 이미지 프롬프트 (60~80단어, warm child-friendly illustrated scene)
+3. "imagePrompt": 이 일기의 주요 장면 영문 이미지 프롬프트 (60~80단어). 장면 묘사에 집중하고 캐릭터·배경·행동·분위기를 구체적으로 묘사. (스타일 지정 불필요 — 별도 처리)
 4. "mainPerson": 주인공 이름 (보통 아이 이름)
 
 {"persons":[],"places":[],"imagePrompt":"","mainPerson":""}`
