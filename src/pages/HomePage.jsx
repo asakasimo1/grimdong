@@ -188,10 +188,16 @@ export default function HomePage() {
         <p className={styles.message}>{message}</p>
       </section>
 
-      <button className={styles.drawBtn} onClick={() => navigate('/draw')}>
-        <span className={styles.drawIcon}>🎨</span>
-        <span>그림 그리기 시작!</span>
-      </button>
+      <div className={styles.actionBtns}>
+        <button className={styles.drawBtn} onClick={() => navigate('/draw')}>
+          <span className={styles.drawIcon}>🎨</span>
+          <span>그림 그리기</span>
+        </button>
+        <button className={styles.diaryBtn} onClick={() => navigate('/diary')}>
+          <span className={styles.drawIcon}>📝</span>
+          <span>일기 쓰기</span>
+        </button>
+      </div>
 
       <section className={styles.recentWrap}>
         <div className={styles.sectionHeader}>

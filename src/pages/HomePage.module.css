@@ -68,24 +68,49 @@
   font-weight: 500;
 }
 
+.actionBtns {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 36px;
+}
+
 .drawBtn {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  width: 100%;
-  padding: 18px 20px;
+  gap: 10px;
+  padding: 18px 12px;
   background: var(--color-primary);
   color: #fff;
   border: none;
   border-radius: var(--radius);
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   font-family: var(--font-kr-body);
   transition: opacity 0.15s;
-  margin-bottom: 36px;
+  cursor: pointer;
 }
 .drawBtn:hover { opacity: 0.88; }
+
+.diaryBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px 12px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: var(--font-kr-body);
+  transition: all 0.15s;
+  cursor: pointer;
+}
+.diaryBtn:hover { background: #EEF1FF; }
 
 .drawIcon { font-size: 1.4rem; }
 

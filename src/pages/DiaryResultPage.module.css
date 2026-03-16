@@ -1,0 +1,137 @@
+.wrap {
+  min-height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #ECEEF5;
+  background: var(--color-bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+  padding: 4px 0;
+  cursor: pointer;
+}
+.backBtn:hover { color: var(--color-text); }
+
+.title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.body {
+  flex: 1;
+  padding: 20px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.dateBox {
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.imageWrap {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  aspect-ratio: 1;
+  background: #f0f0f0;
+}
+
+.diaryImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.textBox {
+  background: var(--color-surface);
+  border-radius: 14px;
+  padding: 18px 16px;
+}
+
+.diaryText {
+  font-size: 1rem;
+  color: var(--color-text);
+  line-height: 1.85;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  background: #EEF1FF;
+  color: var(--color-primary);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ── 푸터 버튼 ── */
+.footer {
+  padding: 14px 20px 32px;
+  border-top: 1px solid #ECEEF5;
+  background: var(--color-bg);
+  display: flex;
+  gap: 10px;
+}
+
+.shareBtn,
+.newBtn {
+  flex: 1;
+  padding: 14px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1.5px solid #ECEEF5;
+  border-radius: var(--radius);
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-family: var(--font-kr-body);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.shareBtn:hover, .newBtn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+.saveBtn {
+  flex: 2;
+  padding: 14px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: var(--font-kr-body);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.saveBtn:hover:not(:disabled) { opacity: 0.88; }
+.saveBtn:disabled { opacity: 0.5; cursor: default; }

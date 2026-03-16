@@ -9,6 +9,8 @@ import HomePage       from './pages/HomePage'
 import DrawPage       from './pages/DrawPage'
 import StoryPage      from './pages/StoryPage'
 import SettingsPage   from './pages/SettingsPage'
+import DiaryInputPage  from './pages/DiaryInputPage'
+import DiaryResultPage from './pages/DiaryResultPage'
 import AudioPlayer    from './components/AudioPlayer'
 import TransformModal from './components/TransformModal'
 
@@ -19,6 +21,8 @@ const PAGE_DEPTH = {
   '/home':                  1,
   '/settings':              2,
   '/draw':                  2,
+  '/diary':                 2,
+  '/diary-result':          3,
   '/story':                 3,
 }
 
@@ -130,6 +134,8 @@ export default function App() {
             <Route path="/settings"            element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
             <Route path="/draw"                element={<PrivateRoute><DrawPage /></PrivateRoute>} />
             <Route path="/story/:id"           element={<PrivateRoute><StoryPage /></PrivateRoute>} />
+            <Route path="/diary"               element={<PrivateRoute><DiaryInputPage /></PrivateRoute>} />
+            <Route path="/diary-result"        element={<PrivateRoute><DiaryResultPage /></PrivateRoute>} />
             <Route path="*"                    element={<Navigate to="/login" replace />} />
           </Routes>
         </motion.div>
