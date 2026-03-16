@@ -8,20 +8,37 @@ export default async function handler(req, res) {
   const FAL_KEY = process.env.FAL_API_KEY
   if (!FAL_KEY) return res.status(500).json({ error: 'FAL_API_KEY not configured' })
 
-  const { imagePrompt, referenceUrl } = req.body ?? {}
+  const { imagePrompt, referenceUrl, placePhotoUrl } = req.body ?? {}
   if (!imagePrompt) return res.status(400).json({ error: 'imagePrompt required' })
+
+  // 사람 사진 우선, 없으면 장소 사진을 레퍼런스로 사용
+  const effectiveRef  = referenceUrl  || null
+  const effectivePlace = placePhotoUrl || null
 
   try {
     let endpoint, body
 
-    if (referenceUrl) {
-      // FLUX.1 Kontext [dev] — 레퍼런스 사진 기반, 지브리 스타일 변환
-      // 실제 인물 외모를 유지하면서 지브리 스타일 적용
-      const kontextPrompt = `Convert the person in the reference photo into Studio Ghibli anime style. Preserve the person's facial features, hair color, and overall appearance as closely as possible. Scene: ${imagePrompt} Apply Ghibli characteristic soft warm colors, painterly backgrounds, Hayao Miyazaki aesthetic. Child-friendly, safe for all ages, no violence.`
+    if (effectiveRef) {
+      // FLUX.1 Kontext — 인물 사진 기반 (얼굴·헤어 보존 + 지브리 스타일)
+      const placeHint = effectivePlace
+        ? ` The background/setting should reference the uploaded place photo's atmosphere and spatial layout.`
+        : ''
+      const kontextPrompt = `Convert the person in the reference photo into Studio Ghibli anime style. Preserve the person's facial features, hair color, and overall appearance as closely as possible. Scene: ${imagePrompt}${placeHint} Apply Ghibli characteristic soft warm colors, painterly backgrounds, Hayao Miyazaki aesthetic. Child-friendly, safe for all ages, no violence.`
       endpoint = 'https://fal.run/fal-ai/flux-kontext/dev'
       body = {
         prompt: kontextPrompt,
-        image_url: referenceUrl,
+        image_url: effectiveRef,
+        num_images: 1,
+        output_format: 'jpeg',
+        num_inference_steps: 28,
+      }
+    } else if (effectivePlace) {
+      // FLUX.1 Kontext — 장소 사진 기반 (배경 분위기 보존 + 지브리 스타일)
+      const kontextPrompt = `Using the reference photo as the background setting, create a Studio Ghibli anime style illustration. Scene: ${imagePrompt} Preserve the overall atmosphere, spatial layout, and key elements of the place in the reference photo, but render everything in Ghibli's soft warm colors and painterly style. Hayao Miyazaki aesthetic. Child-friendly, safe for all ages, no violence.`
+      endpoint = 'https://fal.run/fal-ai/flux-kontext/dev'
+      body = {
+        prompt: kontextPrompt,
+        image_url: effectivePlace,
         num_images: 1,
         output_format: 'jpeg',
         num_inference_steps: 28,

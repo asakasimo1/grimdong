@@ -27,16 +27,17 @@ function compressImage(file, size = 800) {
   })
 }
 
-// 한글 키 → ASCII 파일명 (Supabase Storage는 한글 경로 미지원)
+// 한글 키 → ASCII 파일명
 const KEY_ASCII = {
   '아이': 'child', '엄마': 'mom', '아빠': 'dad',
   '할머니': 'grandma', '할아버지': 'grandpa',
   '오빠': 'brother_o', '언니': 'sister_u',
   '남동생': 'brother_y', '여동생': 'sister_y',
 }
-const toAscii = (key) => KEY_ASCII[key] ?? key.replace(/[^\w]/g, '_')
+const toAscii      = (key)  => KEY_ASCII[key] ?? key.replace(/[^\w]/g, '_')
+const toAsciiPlace = (name) => 'place_' + name.replace(/[^\w]/g, '_').toLowerCase()
 
-// 분석된 인물 이름 → photos 키 매핑
+// 분석된 인물 → photos 키 매핑
 function resolvePhotoKey(personName, childName) {
   if (!personName) return null
   const n = personName.trim()
@@ -44,7 +45,7 @@ function resolvePhotoKey(personName, childName) {
   if (n === '엄마' || n === '어머니') return '엄마'
   if (n === '아빠' || n === '아버지') return '아빠'
   if (['할머니', '할아버지', '오빠', '언니', '남동생', '여동생'].includes(n)) return n
-  return n  // 친구 등 그 외 이름
+  return n
 }
 
 const GENERATE_MESSAGES = [
@@ -56,7 +57,6 @@ const GENERATE_MESSAGES = [
 export default function PhotoRequestModal({ elements, profile, onClose, onGenerate }) {
   const { user } = useAuthStore()
 
-  // 현재 등록된 사진 (로컬 상태로 관리 — 모달 내 업로드 반영)
   const [photos, setPhotos] = useState(() => ({
     persons: profile?.photos?.persons ?? {},
     places:  profile?.photos?.places  ?? {},
@@ -64,58 +64,70 @@ export default function PhotoRequestModal({ elements, profile, onClose, onGenera
 
   const [generating, setGenerating] = useState(false)
   const [msgIdx,     setMsgIdx]     = useState(0)
-  const [uploading,  setUploading]  = useState(null)  // 업로드 중인 키
+  const [uploading,  setUploading]  = useState(null)
 
-  const fileInputRef = useRef(null)
-  const pendingKeyRef = useRef(null)   // 파일 선택 후 저장할 키
+  const fileInputRef  = useRef(null)
+  const pendingKeyRef = useRef(null)   // { type: 'person'|'place', key: string }
 
   const childName = profile?.name || '아이'
 
-  // 등장 인물 목록 (중복 제거, mainPerson 우선)
+  // 등장 인물 목록
   const persons = [...new Set([
     elements.mainPerson,
     ...(elements.persons ?? []),
   ].filter(Boolean))]
 
-  // 인물별 사진 상태
   const personItems = persons.map((name) => {
-    const key     = resolvePhotoKey(name, childName)
+    const key      = resolvePhotoKey(name, childName)
     const photoUrl = photos.persons[key] ?? null
     return { name, key, photoUrl }
   })
 
-  // 주인공(아이) 레퍼런스 URL — 가장 중요한 사진
-  const mainKey      = resolvePhotoKey(elements.mainPerson, childName) || '아이'
-  const referenceUrl = photos.persons[mainKey] ?? null
+  // 장소 목록
+  const placeItems = (elements.places ?? []).map((place) => {
+    const key      = toAsciiPlace(place)
+    const photoUrl = photos.places[key] ?? null
+    return { name: place, key, photoUrl }
+  })
 
-  // 파일 업로드 처리
+  // 주인공 레퍼런스 (사람 우선 → 없으면 장소)
+  const mainKey      = resolvePhotoKey(elements.mainPerson, childName) || '아이'
+  const personRef    = photos.persons[mainKey] ?? null
+  const placeRef     = placeItems.find(p => p.photoUrl)?.photoUrl ?? null
+  const referenceUrl = personRef  // 사람 사진: FLUX reference (얼굴 보존)
+  const placePhotoUrl = placeRef  // 장소 사진: 배경 참조
+
+  // 파일 업로드
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0]
-    const key  = pendingKeyRef.current
-    if (!file || !key || !user) return
+    const pending = pendingKeyRef.current
+    if (!file || !pending || !user) return
     e.target.value = ''
 
-    setUploading(key)
+    setUploading(pending.key)
     try {
       const blob = await compressImage(file)
-      const path = `${user.id}/person_${toAscii(key)}.jpg`
+      const path = pending.type === 'person'
+        ? `${user.id}/person_${toAscii(pending.key)}.jpg`
+        : `${user.id}/${pending.key}.jpg`
 
       const { error: upErr } = await supabase.storage
         .from('profile-photos')
         .upload(path, blob, { contentType: 'image/jpeg', upsert: true })
       if (upErr) throw upErr
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile-photos')
-        .getPublicUrl(path)
+      const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(path)
 
-      // profiles.photos 업데이트
-      const newPersons = { ...photos.persons, [key]: publicUrl }
-      const newPhotos  = { persons: newPersons, places: photos.places }
+      let newPhotos
+      if (pending.type === 'person') {
+        newPhotos = { persons: { ...photos.persons, [pending.key]: publicUrl }, places: photos.places }
+      } else {
+        newPhotos = { persons: photos.persons, places: { ...photos.places, [pending.key]: publicUrl } }
+      }
+
       await supabase.from('profiles').upsert({ id: user.id, photos: newPhotos })
-
       setPhotos(newPhotos)
-      toast.success(`${key} 사진 등록 완료! 📸`)
+      toast.success(`${pending.key.replace('place_', '')} 사진 등록 완료! 📸`)
     } catch (err) {
       console.error('[사진 업로드 에러]', err)
       Sentry.captureException(err)
@@ -126,8 +138,8 @@ export default function PhotoRequestModal({ elements, profile, onClose, onGenera
     }
   }
 
-  const triggerUpload = (key) => {
-    pendingKeyRef.current = key
+  const triggerUpload = (type, key) => {
+    pendingKeyRef.current = { type, key }
     fileInputRef.current?.click()
   }
 
@@ -141,8 +153,9 @@ export default function PhotoRequestModal({ elements, profile, onClose, onGenera
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          imagePrompt: elements.imagePrompt,
-          referenceUrl: referenceUrl ?? null,
+          imagePrompt:   elements.imagePrompt,
+          referenceUrl:  referenceUrl  ?? null,
+          placePhotoUrl: placePhotoUrl ?? null,
         }),
       })
       const data = await res.json()
@@ -163,7 +176,7 @@ export default function PhotoRequestModal({ elements, profile, onClose, onGenera
 
   return (
     <>
-      {/* 생성 중 로딩 오버레이 */}
+      {/* 생성 중 오버레이 */}
       {generating && (
         <div className={styles.loadingOverlay}>
           <div className={styles.loadingCard}>
@@ -174,20 +187,19 @@ export default function PhotoRequestModal({ elements, profile, onClose, onGenera
         </div>
       )}
 
-      {/* 모달 백드롭 */}
       <div className={styles.backdrop} onClick={generating ? undefined : onClose}>
         <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
           <button className={styles.closeBtn} disabled={generating} onClick={onClose}>✕</button>
 
           <h2 className={styles.modalTitle}>🎨 이런 장면이네요!</h2>
-          <p className={styles.modalDesc}>등장하는 사람의 사진을 추가하면 더 비슷하게 만들 수 있어요!</p>
+          <p className={styles.modalDesc}>사진을 추가하면 그림에 더 잘 반영돼요!</p>
 
-          {/* 인물 목록 */}
+          {/* ── 인물 사진 ── */}
+          <p className={styles.sectionLabel}>👤 등장 인물</p>
           <div className={styles.personList}>
             {personItems.map(({ name, key, photoUrl }) => (
               <div key={key} className={styles.personCard}>
-                {/* 사진 미리보기 or 플레이스홀더 */}
-                <div className={styles.photoSlot} onClick={() => !generating && triggerUpload(key)}>
+                <div className={styles.photoSlot} onClick={() => !generating && triggerUpload('person', key)}>
                   {uploading === key ? (
                     <div className={styles.uploadingSpinner}>⏳</div>
                   ) : photoUrl ? (
@@ -201,11 +213,12 @@ export default function PhotoRequestModal({ elements, profile, onClose, onGenera
                     <span>{photoUrl ? '변경' : '+ 추가'}</span>
                   </div>
                 </div>
-
                 <div className={styles.personInfo}>
                   <span className={styles.personName}>{name}</span>
                   {photoUrl
-                    ? <span className={styles.photoStatus + ' ' + styles.registered}>✅ 사진 있음</span>
+                    ? <span className={`${styles.photoStatus} ${styles.registered}`}>
+                        {key === mainKey ? '✅ 주인공 (그림 기준)' : '✅ 사진 있음'}
+                      </span>
                     : <span className={styles.photoStatus}>📷 사진 없음</span>
                   }
                 </div>
@@ -213,22 +226,59 @@ export default function PhotoRequestModal({ elements, profile, onClose, onGenera
             ))}
           </div>
 
-          {/* 장소 배지 */}
-          {elements.places?.length > 0 && (
-            <div className={styles.placeRow}>
-              <span className={styles.placeLabel}>📍 장소</span>
-              {elements.places.map((p) => (
-                <span key={p} className={styles.placeBadge}>{p}</span>
-              ))}
-            </div>
-          )}
-
           {/* 레퍼런스 안내 */}
-          <p className={styles.refNote}>
-            {referenceUrl
-              ? `✨ ${mainKey} 사진을 기준으로 그림을 그릴게요!`
-              : '📸 사진이 없어도 일기 내용으로 그림을 만들 수 있어요!'}
-          </p>
+          <div className={styles.refBox}>
+            {personRef ? (
+              <p className={styles.refNote}>
+                ✨ <strong>{mainKey}</strong> 사진을 기준으로 얼굴·헤어를 살려 그릴게요!
+                {personItems.filter(p => p.key !== mainKey && p.photoUrl).length > 0 && (
+                  <span className={styles.refSub}><br />⚠️ AI 특성상 한 번에 1명 얼굴만 기준 적용돼요. 나머지는 텍스트로 묘사됩니다.</span>
+                )}
+              </p>
+            ) : (
+              <p className={styles.refNote}>📸 사진이 없어도 일기 내용으로 그림을 만들 수 있어요!</p>
+            )}
+          </div>
+
+          {/* ── 장소 사진 ── */}
+          {placeItems.length > 0 && (
+            <>
+              <p className={styles.sectionLabel}>📍 장소 <span className={styles.sectionHint}>— 배경에 반영돼요</span></p>
+              <div className={styles.placePhotoList}>
+                {placeItems.map(({ name, key, photoUrl }) => (
+                  <div key={key} className={styles.placeCard}>
+                    <div className={styles.placePhotoSlot} onClick={() => !generating && triggerUpload('place', key)}>
+                      {uploading === key ? (
+                        <div className={styles.uploadingSpinner}>⏳</div>
+                      ) : photoUrl ? (
+                        <img src={photoUrl} alt={name} className={styles.placePhotoImg} />
+                      ) : (
+                        <div className={styles.placePhotoPlaceholder}>
+                          <span>🏞️</span>
+                        </div>
+                      )}
+                      <div className={styles.photoOverlay}>
+                        <span>{photoUrl ? '변경' : '+ 추가'}</span>
+                      </div>
+                    </div>
+                    <div className={styles.placeInfo}>
+                      <span className={styles.placeName}>{name}</span>
+                      {photoUrl
+                        ? <span className={`${styles.photoStatus} ${styles.registered}`}>✅ 배경 사진 있음</span>
+                        : <span className={styles.photoStatus}>🏞️ 사진 없음</span>
+                      }
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {placePhotoUrl && !personRef && (
+                <p className={styles.placeRefNote}>✨ 장소 사진을 배경 기준으로 활용할게요!</p>
+              )}
+              {placePhotoUrl && personRef && (
+                <p className={styles.placeRefNote}>✨ 장소 사진도 배경 참고로 활용돼요!</p>
+              )}
+            </>
+          )}
 
           {/* 액션 버튼 */}
           <div className={styles.actions}>
@@ -242,7 +292,6 @@ export default function PhotoRequestModal({ elements, profile, onClose, onGenera
         </div>
       </div>
 
-      {/* 숨겨진 파일 인풋 */}
       <input
         ref={fileInputRef}
         type="file"

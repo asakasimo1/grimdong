@@ -24,7 +24,7 @@ async function shareOrDownload(blob, filename) {
 export default function DiaryResultPage() {
   const navigate  = useNavigate()
   const { user }  = useAuthStore()
-  const { diaryText, diaryDate, analyzedElements, generatedImage, reset } = useDiaryStore()
+  const { diaryText, diaryDate, diaryWeather, analyzedElements, generatedImage, reset } = useDiaryStore()
 
   const cardRef   = useRef(null)
   const [saving,  setSaving]  = useState(false)
@@ -109,7 +109,10 @@ export default function DiaryResultPage() {
           {/* 카드 헤더 */}
           <div className={styles.cardHeader}>
             <span className={styles.cardDate}>{diaryDate}</span>
-            <span className={styles.cardDeco}>✦</span>
+            <div className={styles.cardHeaderRight}>
+              {diaryWeather && <span className={styles.cardWeather}>{diaryWeather.icon}</span>}
+              <span className={styles.cardDeco}>✦</span>
+            </div>
           </div>
 
           {/* 삽화 */}

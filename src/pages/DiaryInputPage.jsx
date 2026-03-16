@@ -17,6 +17,15 @@ const MODES = [
   { id: 'voice', icon: '🎤', label: '음성 입력' },
 ]
 
+const WEATHERS = [
+  { id: 'sunny',         icon: '☀️', label: '맑음' },
+  { id: 'partly_cloudy', icon: '⛅', label: '구름조금' },
+  { id: 'cloudy',        icon: '☁️', label: '흐림' },
+  { id: 'rainy',         icon: '🌧️', label: '비' },
+  { id: 'snowy',         icon: '❄️', label: '눈' },
+  { id: 'thunder',       icon: '⛈️', label: '천둥번개' },
+]
+
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -29,19 +38,21 @@ function fileToBase64(file) {
 export default function DiaryInputPage() {
   const navigate  = useNavigate()
   const { user }  = useAuthStore()
-  const { setDiaryText, setDiaryDate, setAnalyzedElements, setGeneratedImage } = useDiaryStore()
+  const { setDiaryText, setDiaryDate, setDiaryWeather, setAnalyzedElements, setGeneratedImage } = useDiaryStore()
 
   const [mode,      setMode]      = useState('text')
   const [text,      setText]      = useState('')
+  const [weather,   setWeather]   = useState(null)  // WEATHER item or null
   const [analyzing, setAnalyzing] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [elements,  setElements]  = useState(null)
   const [profile,   setProfile]   = useState(null)
 
   // Photo OCR
-  const [ocrLoading,    setOcrLoading]    = useState(false)
-  const [photoPreview,  setPhotoPreview]  = useState(null)
-  const photoInputRef = useRef(null)
+  const [ocrLoading,   setOcrLoading]   = useState(false)
+  const [photoPreview, setPhotoPreview] = useState(null)
+  const cameraInputRef  = useRef(null)  // 카메라 직접 촬영
+  const galleryInputRef = useRef(null)  // 갤러리 선택
 
   // Voice
   const [recording, setRecording] = useState(false)
@@ -57,7 +68,6 @@ export default function DiaryInputPage() {
       .then(({ data }) => setProfile(data ?? {}))
   }, [user])
 
-  // 모드 전환 시 음성 중지
   useEffect(() => {
     if (mode !== 'voice' && recording) {
       recognitionRef.current?.stop()
@@ -66,7 +76,7 @@ export default function DiaryInputPage() {
     }
   }, [mode])
 
-  // ── Photo OCR ──
+  // ── Photo OCR (카메라 / 갤러리 공통 핸들러) ──
   const handlePhotoSelect = async (e) => {
     const file = e.target.files?.[0]
     e.target.value = ''
@@ -115,31 +125,22 @@ export default function DiaryInputPage() {
 
   // ── Voice ──
   const toggleRecording = () => {
-    if (!hasSpeechAPI) {
-      toast.error('이 브라우저에서는 음성 입력이 지원되지 않아요.')
-      return
-    }
-    if (recording) {
-      recognitionRef.current?.stop()
-      return
-    }
+    if (!hasSpeechAPI) { toast.error('이 브라우저에서는 음성 입력이 지원되지 않아요.'); return }
+    if (recording) { recognitionRef.current?.stop(); return }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     const rec = new SpeechRecognition()
     rec.lang = 'ko-KR'
     rec.continuous = true
     rec.interimResults = true
-
     rec.onstart  = () => { setRecording(true); setInterim('') }
     rec.onend    = () => { setRecording(false); setInterim('') }
     rec.onerror  = (e) => {
       if (e.error !== 'aborted') toast.error('음성 인식 오류가 발생했어요.')
-      setRecording(false)
-      setInterim('')
+      setRecording(false); setInterim('')
     }
     rec.onresult = (e) => {
-      let finalPart = ''
-      let interimPart = ''
+      let finalPart = '', interimPart = ''
       for (let i = e.resultIndex; i < e.results.length; i++) {
         if (e.results[i].isFinal) finalPart += e.results[i][0].transcript
         else interimPart += e.results[i][0].transcript
@@ -147,7 +148,6 @@ export default function DiaryInputPage() {
       if (finalPart) setText((prev) => prev ? prev + ' ' + finalPart : finalPart)
       setInterim(interimPart)
     }
-
     recognitionRef.current = rec
     rec.start()
   }
@@ -160,15 +160,16 @@ export default function DiaryInputPage() {
     setAnalyzing(true)
     try {
       const childName = profile?.name || '아이'
+      const weatherDesc = weather ? ` 오늘 날씨: ${weather.label}.` : ''
       const prompt = `아이의 일기를 분석해서 아래 JSON 형식으로만 답해줘 (마크다운·코드블록 없이 순수 JSON):
 
 일기: "${trimmed}"
-아이 이름: "${childName}"
+아이 이름: "${childName}"${weatherDesc}
 
 추출:
 1. "persons": 등장 인물 이름/호칭 배열 (예: ["${childName}", "엄마", "지유"])
 2. "places": 등장 장소 배열 (예: ["놀이터", "공원"])
-3. "imagePrompt": 이 일기의 주요 장면 영문 이미지 프롬프트 (60~80단어). 장면 묘사에 집중하고 캐릭터·배경·행동·분위기를 구체적으로 묘사. (스타일 지정 불필요 — 별도 처리)
+3. "imagePrompt": 이 일기의 주요 장면 영문 이미지 프롬프트 (60~80단어). 장면 묘사에 집중하고 캐릭터·배경·행동·분위기를 구체적으로 묘사${weather ? `. 날씨: ${weather.label}` : ''}. (스타일 지정 불필요 — 별도 처리)
 4. "mainPerson": 주인공 이름 (보통 아이 이름)
 
 {"persons":[],"places":[],"imagePrompt":"","mainPerson":""}`
@@ -180,10 +181,7 @@ export default function DiaryInputPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: {
-              maxOutputTokens: 400,
-              thinkingConfig: { thinkingBudget: 0 },
-            },
+            generationConfig: { maxOutputTokens: 400, thinkingConfig: { thinkingBudget: 0 } },
           }),
         }
       )
@@ -197,6 +195,7 @@ export default function DiaryInputPage() {
       const result = JSON.parse(match[0])
       setDiaryText(trimmed)
       setDiaryDate(dateLabel)
+      setDiaryWeather(weather)
       setAnalyzedElements(result)
       setElements(result)
       setShowModal(true)
@@ -223,9 +222,25 @@ export default function DiaryInputPage() {
       </header>
 
       <div className={styles.body}>
+        {/* 날짜 + 날씨 선택 */}
         <div className={styles.dateBox}>
-          <span className={styles.dateIcon}>📅</span>
-          <span>{dateLabel}</span>
+          <div className={styles.dateLeft}>
+            <span className={styles.dateIcon}>📅</span>
+            <span>{dateLabel}</span>
+            {weather && <span className={styles.selectedWeather}>{weather.icon}</span>}
+          </div>
+          <div className={styles.weatherRow}>
+            {WEATHERS.map((w) => (
+              <button
+                key={w.id}
+                className={`${styles.weatherBtn} ${weather?.id === w.id ? styles.weatherBtnActive : ''}`}
+                onClick={() => setWeather(weather?.id === w.id ? null : w)}
+                title={w.label}
+              >
+                {w.icon}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* 입력 모드 선택 탭 */}
@@ -245,35 +260,40 @@ export default function DiaryInputPage() {
         {/* 사진 인식 모드 */}
         {mode === 'photo' && (
           <div className={styles.photoSection}>
-            <button
-              className={styles.photoUploadBtn}
-              onClick={() => photoInputRef.current?.click()}
-              disabled={ocrLoading}
-            >
-              {ocrLoading ? (
-                <><span>⏳</span><span>손글씨 읽는 중...</span></>
-              ) : photoPreview ? (
-                <><span>🔄</span><span>다시 찍기</span></>
-              ) : (
-                <><span className={styles.photoUploadIcon}>📷</span><span>일기 사진 찍기 / 불러오기</span></>
-              )}
-            </button>
+            {/* 카메라 / 갤러리 두 버튼 */}
+            <div className={styles.photoButtons}>
+              <button
+                className={styles.photoUploadBtn}
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={ocrLoading}
+              >
+                <span className={styles.photoUploadIcon}>📷</span>
+                <span>카메라로 찍기</span>
+              </button>
+              <button
+                className={`${styles.photoUploadBtn} ${styles.photoUploadBtnOutline}`}
+                onClick={() => galleryInputRef.current?.click()}
+                disabled={ocrLoading}
+              >
+                <span className={styles.photoUploadIcon}>🖼️</span>
+                <span>갤러리에서 선택</span>
+              </button>
+            </div>
 
             {photoPreview && (
               <div className={styles.photoPreviewWrap}>
                 <img src={photoPreview} alt="일기 사진" className={styles.photoPreview} />
                 {ocrLoading && <div className={styles.ocrOverlay}><span className={styles.ocrSpinner} /></div>}
+                {!ocrLoading && (
+                  <button className={styles.retakeBtn} onClick={() => { setPhotoPreview(null); setText('') }}>✕ 다시 선택</button>
+                )}
               </div>
             )}
 
-            <input
-              ref={photoInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              style={{ display: 'none' }}
-              onChange={handlePhotoSelect}
-            />
+            {/* 카메라 전용 input (capture=environment) */}
+            <input ref={cameraInputRef}  type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handlePhotoSelect} />
+            {/* 갤러리 전용 input (capture 없음) */}
+            <input ref={galleryInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoSelect} />
           </div>
         )}
 
@@ -281,9 +301,7 @@ export default function DiaryInputPage() {
         {mode === 'voice' && (
           <div className={styles.voiceSection}>
             {!hasSpeechAPI ? (
-              <p className={styles.voiceUnsupported}>
-                이 브라우저에서는 음성 입력이 지원되지 않아요.<br />Chrome 또는 Safari를 사용해주세요.
-              </p>
+              <p className={styles.voiceUnsupported}>이 브라우저에서는 음성 입력이 지원되지 않아요.<br />Chrome 또는 Safari를 사용해주세요.</p>
             ) : (
               <>
                 <button
@@ -299,15 +317,13 @@ export default function DiaryInputPage() {
                     <span>듣고 있어요...</span>
                   </div>
                 )}
-                {recording && interim && (
-                  <p className={styles.interimText}>{interim}</p>
-                )}
+                {recording && interim && <p className={styles.interimText}>{interim}</p>}
               </>
             )}
           </div>
         )}
 
-        {/* 공통 텍스트 입력 영역 */}
+        {/* 공통 텍스트 입력 */}
         <div className={styles.textareaWrap}>
           {(mode === 'photo' || mode === 'voice') && text && (
             <p className={styles.editHint}>✏️ 인식된 내용이에요. 수정도 가능해요!</p>
@@ -315,11 +331,9 @@ export default function DiaryInputPage() {
           <textarea
             className={styles.textarea}
             placeholder={
-              mode === 'photo'
-                ? '사진을 찍으면 일기 내용이 여기에 나타나요!\n직접 수정도 가능해요.'
-                : mode === 'voice'
-                ? '말하면 일기 내용이 여기에 나타나요!\n직접 수정도 가능해요.'
-                : `오늘 있었던 일을 써보세요!\n\n예) 오늘 놀이터에서 지유랑 미끄럼틀을 탔어요. 엄마가 벤치에 앉아서 응원해줬어요. 너무 재미있었어요.`
+              mode === 'photo' ? '사진을 찍으면 일기 내용이 여기에 나타나요!\n직접 수정도 가능해요.'
+              : mode === 'voice' ? '말하면 일기 내용이 여기에 나타나요!\n직접 수정도 가능해요.'
+              : `오늘 있었던 일을 써보세요!\n\n예) 오늘 놀이터에서 지유랑 미끄럼틀을 탔어요.`
             }
             value={text}
             onChange={(e) => setText(e.target.value)}

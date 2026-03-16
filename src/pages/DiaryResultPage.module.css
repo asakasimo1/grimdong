@@ -73,6 +73,17 @@
   letter-spacing: 0.02em;
 }
 
+.cardHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cardWeather {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
 .cardDeco {
   font-size: 1rem;
   color: #C8B88A;

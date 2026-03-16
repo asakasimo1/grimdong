@@ -49,15 +49,51 @@
 .dateBox {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--color-primary);
   background: #EEF1FF;
   padding: 10px 14px;
   border-radius: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dateLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-primary);
 }
 .dateIcon { font-size: 1rem; }
+.selectedWeather { font-size: 1.1rem; }
+
+/* 날씨 선택 */
+.weatherRow {
+  display: flex;
+  gap: 4px;
+}
+.weatherBtn {
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.6);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  padding: 0;
+}
+.weatherBtn:hover { background: #fff; border-color: var(--color-primary); }
+.weatherBtnActive {
+  background: #fff;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(61,90,254,0.18);
+}
 
 /* ── 모드 탭 ── */
 .modeTabs {
@@ -99,17 +135,23 @@
   gap: 10px;
 }
 
+.photoButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
 .photoUploadBtn {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 16px;
+  gap: 6px;
+  padding: 16px 10px;
   background: var(--color-surface);
   border: 2px dashed #C5CAE9;
   border-radius: 14px;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 700;
   font-family: var(--font-kr-body);
   color: var(--color-primary);
@@ -119,7 +161,28 @@
 .photoUploadBtn:hover:not(:disabled) { background: #EEF1FF; border-color: var(--color-primary); }
 .photoUploadBtn:disabled { opacity: 0.6; cursor: default; }
 
-.photoUploadIcon { font-size: 1.4rem; }
+.photoUploadBtnOutline {
+  background: transparent;
+  border-style: solid;
+  border-color: #C5CAE9;
+  color: var(--color-muted);
+}
+.photoUploadBtnOutline:hover:not(:disabled) { color: var(--color-primary); border-color: var(--color-primary); background: #EEF1FF; }
+
+.photoUploadIcon { font-size: 1.5rem; }
+
+.retakeBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
 
 .photoPreviewWrap {
   position: relative;
