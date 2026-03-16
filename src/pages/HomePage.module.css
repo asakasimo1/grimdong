@@ -40,6 +40,16 @@
 }
 .settingsBtn:hover { opacity: 1; }
 
+.backToSelect {
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  padding: 6px 4px;
+  cursor: pointer;
+}
+.backToSelect:hover { color: var(--color-primary); }
+
 .outBtn {
   background: none;
   border: none;

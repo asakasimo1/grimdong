@@ -10,7 +10,7 @@ export default function KakaoCallback() {
       if (error || !session) {
         navigate('/login')
       } else {
-        navigate('/home')
+        navigate('/select')
       }
     })
   }, [navigate])

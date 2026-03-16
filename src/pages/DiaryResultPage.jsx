@@ -95,7 +95,7 @@ export default function DiaryResultPage() {
   return (
     <div className={styles.wrap}>
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate('/home')}>← 홈</button>
+        <button className={styles.backBtn} onClick={() => navigate('/select')}>← 홈</button>
         <h1 className={styles.title}>📔 나의 그림일기</h1>
         <div />
       </header>

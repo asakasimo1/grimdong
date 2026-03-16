@@ -67,7 +67,7 @@ export default function SettingsPage() {
         setFriends(data.friends ?? [])
         setFamily(data.family ?? [])
         setPet(data.pet ?? '')
-        setPhotos(data.photos ?? { persons: {}, places: {} })
+        setPhotos({ persons: data.photos?.persons ?? {}, places: data.photos?.places ?? {} })
       })
   }, [user])
 
@@ -129,13 +129,13 @@ export default function SettingsPage() {
     setSaving(false)
     if (error) { toast.error('저장 실패: ' + error.message); return }
     toast.success('저장됐어요! 🎉')
-    navigate('/home')
+    navigate('/select')
   }
 
   return (
     <div className={styles.wrap}>
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate('/home')}>← 홈</button>
+        <button className={styles.backBtn} onClick={() => navigate('/select')}>← 홈</button>
         <h1 className={styles.title}>아이 정보 설정</h1>
         <div />
       </header>

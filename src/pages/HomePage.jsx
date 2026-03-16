@@ -177,6 +177,7 @@ export default function HomePage() {
       <header className={styles.header}>
         <span className={styles.logoSmall}>아이<em>담</em></span>
         <div className={styles.headerActions}>
+          <button className={styles.backToSelect} onClick={() => navigate('/select')}>← 홈</button>
           <button className={styles.settingsBtn} onClick={() => navigate('/settings')}>⚙️</button>
           <button className={styles.outBtn} onClick={signOut}>로그아웃</button>
         </div>

@@ -9,6 +9,7 @@ import HomePage       from './pages/HomePage'
 import DrawPage       from './pages/DrawPage'
 import StoryPage      from './pages/StoryPage'
 import SettingsPage   from './pages/SettingsPage'
+import SelectPage      from './pages/SelectPage'
 import DiaryInputPage  from './pages/DiaryInputPage'
 import DiaryResultPage from './pages/DiaryResultPage'
 import AudioPlayer    from './components/AudioPlayer'
@@ -18,6 +19,7 @@ import TransformModal from './components/TransformModal'
 const PAGE_DEPTH = {
   '/login':                 0,
   '/auth/kakao/callback':   0,
+  '/select':                1,
   '/home':                  1,
   '/settings':              2,
   '/draw':                  2,
@@ -130,13 +132,14 @@ export default function App() {
           <Routes location={location}>
             <Route path="/login"               element={<LoginPage />} />
             <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
+            <Route path="/select"              element={<PrivateRoute><SelectPage /></PrivateRoute>} />
             <Route path="/home"                element={<PrivateRoute><HomePage /></PrivateRoute>} />
             <Route path="/settings"            element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
             <Route path="/draw"                element={<PrivateRoute><DrawPage /></PrivateRoute>} />
             <Route path="/story/:id"           element={<PrivateRoute><StoryPage /></PrivateRoute>} />
             <Route path="/diary"               element={<PrivateRoute><DiaryInputPage /></PrivateRoute>} />
             <Route path="/diary-result"        element={<PrivateRoute><DiaryResultPage /></PrivateRoute>} />
-            <Route path="*"                    element={<Navigate to="/login" replace />} />
+            <Route path="*"                    element={<Navigate to="/select" replace />} />
           </Routes>
         </motion.div>
       </AnimatePresence>

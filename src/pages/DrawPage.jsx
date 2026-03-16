@@ -484,7 +484,7 @@ export default function DrawPage() {
   return (
     <div className={styles.wrap}>
       <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate('/home')}>← 홈</button>
+        <button className={styles.backBtn} onClick={() => navigate('/select')}>← 홈</button>
         <h1 className={styles.title}>오늘의 그림</h1>
         <div className={styles.headerActions}>
           {mode === 'draw' && (

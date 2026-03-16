@@ -81,7 +81,7 @@ export default function TransformModal() {
                   { inline_data: { mime_type: 'image/png', data: b64 } },
                 ],
               }],
-              generationConfig: { maxOutputTokens: 120 },
+              generationConfig: { maxOutputTokens: 120, thinkingConfig: { thinkingBudget: 0 } },
             }),
           }
         )
