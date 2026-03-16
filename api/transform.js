@@ -47,7 +47,10 @@ export default async function handler(req, res) {
     })
 
     const falData = await falRes.json()
-    if (!falRes.ok) throw new Error(falData.message || `fal.ai ${falRes.status}`)
+    if (!falRes.ok) {
+      console.error('[fal.ai error]', falRes.status, JSON.stringify(falData))
+      throw new Error(falData.detail || falData.message || falData.error || `fal.ai ${falRes.status}`)
+    }
 
     const imgUrl = falData.images?.[0]?.url
     if (!imgUrl) throw new Error('NO_IMAGE')
