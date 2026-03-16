@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>아이담 사용 가이드 — AI 그림일기 플랫폼</title>
+  <style>
+    :root {
+      --primary: #3D5AFE;
+      --primary-light: #EEF1FF;
+      --primary-dark: #2a3eb1;
+      --accent: #FF6B6B;
+      --text: #1A1F36;
+      --muted: #6B7280;
+      --bg: #F5F6FA;
+      --surface: #FFFFFF;
+      --border: #E5E7EB;
+      --radius: 16px;
+      --shadow: 0 4px 24px rgba(61,90,254,0.10);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, #3D5AFE 0%, #6979F8 50%, #A6AFFB 100%);
+      color: #fff;
+      text-align: center;
+      padding: 80px 20px 100px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 100px;
+      padding: 6px 18px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    .hero-desc {
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      opacity: 0.9;
+      max-width: 560px;
+      margin: 0 auto 32px;
+      line-height: 1.6;
+    }
+    .hero-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 14px 32px;
+      border-radius: 100px;
+      text-decoration: none;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* ── Section ── */
+    section {
+      padding: 64px 0;
+    }
+    section + section {
+      border-top: 1px solid var(--border);
+    }
+    .section-label {
+      display: inline-block;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 4px 14px;
+      border-radius: 100px;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .section-desc {
+      color: var(--muted);
+      font-size: 1rem;
+      margin-bottom: 40px;
+      max-width: 600px;
+    }
+
+    /* ── Feature Cards ── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 8px 40px rgba(61,90,254,0.15); }
+    .card-icon {
+      font-size: 2.2rem;
+      margin-bottom: 14px;
+      display: block;
+    }
+    .card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .card p {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── Steps ── */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .step {
+      display: flex;
+      gap: 24px;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      margin-top: 2px;
+    }
+    .step-content h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .step-content p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+    .step-tip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #FFFBEA;
+      border: 1px solid #FFE082;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      color: #7A6200;
+      margin-top: 10px;
+    }
+
+    /* ── Mode Tabs Visual ── */
+    .mode-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .mode-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 20px;
+      text-align: center;
+      transition: all 0.15s;
+      cursor: default;
+    }
+    .mode-card:hover { border-color: var(--primary); background: var(--primary-light); }
+    .mode-card-icon { font-size: 2.4rem; margin-bottom: 10px; display: block; }
+    .mode-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
+    .mode-card p { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+    /* ── Highlight Box ── */
+    .highlight {
+      background: linear-gradient(135deg, var(--primary-light), #F0F4FF);
+      border: 1.5px solid #C5CAE9;
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      margin: 32px 0;
+    }
+    .highlight h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--primary-dark);
+    }
+    .highlight ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .highlight ul li::before {
+      content: '✓ ';
+      color: var(--primary);
+      font-weight: 700;
+    }
+    .highlight ul li {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    /* ── FAQ ── */
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .faq-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .faq-q {
+      width: 100%;
+      text-align: left;
+      padding: 18px 24px;
+      background: none;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: inherit;
+    }
+    .faq-q::after { content: '+'; font-size: 1.2rem; color: var(--muted); }
+    .faq-a {
+      padding: 0 24px 18px;
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.7;
+      display: none;
+    }
+    .faq-item.open .faq-a { display: block; }
+    .faq-item.open .faq-q::after { content: '−'; }
+
+    /* ── CTA Banner ── */
+    .cta-banner {
+      background: linear-gradient(135deg, #3D5AFE, #6979F8);
+      color: #fff;
+      border-radius: 20px;
+      padding: 48px 32px;
+      text-align: center;
+    }
+    .cta-banner h2 {
+      font-size: clamp(1.4rem, 3vw, 1.9rem);
+      font-weight: 800;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    .cta-banner p {
+      opacity: 0.85;
+      margin-bottom: 28px;
+      font-size: 1rem;
+    }
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 14px 36px;
+      border-radius: 100px;
+      text-decoration: none;
+      transition: transform 0.15s;
+    }
+    .cta-btn:hover { transform: translateY(-2px); }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--text);
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      padding: 32px 20px;
+      font-size: 0.82rem;
+    }
+    footer a { color: rgba(255,255,255,0.7); text-decoration: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .hero { padding: 60px 20px 80px; }
+      section { padding: 48px 0; }
+      .step { gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="container">
+    <div class="hero-badge">✨ AI 그림일기 플랫폼</div>
+    <h1>아이의 하루를<br>특별한 그림일기로</h1>
+    <p class="hero-desc">아이가 그린 그림이나 쓴 일기를 AI가 아름다운 지브리 스타일 그림일기로 만들어드려요. 매일매일 소중한 추억을 쌓아보세요.</p>
+    <a href="https://grimdong-fuee.vercel.app" target="_blank" class="hero-cta">
+      🎨 지금 시작하기
+    </a>
+  </div>
+</div>
+
+<!-- 핵심 기능 소개 -->
+<section>
+  <div class="container">
+    <div class="section-label">FEATURES</div>
+    <h2 class="section-title">아이담이 할 수 있는 것들</h2>
+    <p class="section-desc">그리기부터 일기 쓰기까지, 아이의 창의력을 AI가 더 풍성하게 만들어드려요.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <span class="card-icon">🎨</span>
+        <h3>그림 그리고 일기만들기</h3>
+        <p>캔버스에 자유롭게 그림을 그리면 AI가 지브리·풍경화·스케치 등 4가지 스타일로 변환하고, 그림에 맞는 일기 글도 자동으로 써줘요.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">📝</span>
+        <h3>일기 쓰고 그림만들기</h3>
+        <p>아이가 쓴 일기를 입력하면 AI가 내용에 맞는 삽화를 지브리 스타일로 그려줘요. 직접 입력, 사진 찍기, 음성으로 말하기 3가지 방법을 지원해요.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">👨‍👩‍👧</span>
+        <h3>가족 사진 반영</h3>
+        <p>아이, 엄마, 아빠 등 가족 사진을 미리 등록해두면 AI가 실제 인물의 모습을 살려서 그림을 그려줘요.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">💾</span>
+        <h3>그림일기 저장 & 공유</h3>
+        <p>완성된 그림일기를 앱에 저장하거나 카카오톡·인스타그램 등으로 바로 공유할 수 있어요.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Part 1: 그려서 일기만들기 -->
+<section>
+  <div class="container">
+    <div class="section-label">기능 ①</div>
+    <h2 class="section-title">🎨 그려서 일기만들기</h2>
+    <p class="section-desc">아이가 직접 그린 그림을 AI가 아름다운 그림일기로 완성해줘요.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h3>캔버스에 그림 그리기</h3>
+          <p>연필, 원형붓, 스프레이, 스티커 브러시 중 원하는 도구로 자유롭게 그려요. 사진을 불러와서 그 위에 그림을 추가할 수도 있어요.</p>
+          <div class="step-tip">💡 연필로 스케치한 뒤 색칠하면 더 멋진 그림이 나와요!</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h3>AI 변환 스타일 선택</h3>
+          <p>4가지 스타일 중 하나를 선택하세요. 지브리 스타일이 가장 인기 있어요!</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+            <span style="background:#EEF1FF;color:#3D5AFE;padding:4px 12px;border-radius:100px;font-size:0.82rem;font-weight:600;">🏯 지브리</span>
+            <span style="background:#EEF1FF;color:#3D5AFE;padding:4px 12px;border-radius:100px;font-size:0.82rem;font-weight:600;">🏞️ 풍경화</span>
+            <span style="background:#EEF1FF;color:#3D5AFE;padding:4px 12px;border-radius:100px;font-size:0.82rem;font-weight:600;">✏️ 스케치</span>
+            <span style="background:#EEF1FF;color:#3D5AFE;padding:4px 12px;border-radius:100px;font-size:0.82rem;font-weight:600;">✨ 화보스타일</span>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h3>AI가 그림일기 완성</h3>
+          <p>약 30~60초 후, AI가 변환된 그림과 그림에 어울리는 일기 글을 자동으로 만들어줘요. 아이 이름이 주인공으로 등장하는 1인칭 일기예요.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h3>저장하고 공유하기</h3>
+          <p>완성된 그림일기를 앱에 저장하거나, 카카오톡·인스타그램으로 가족과 친구들에게 바로 공유해요.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Part 2: 일기로 그림만들기 -->
+<section>
+  <div class="container">
+    <div class="section-label">기능 ②</div>
+    <h2 class="section-title">📝 일기로 그림만들기</h2>
+    <p class="section-desc">아이가 쓴 일기 내용을 분석해서 AI가 지브리 스타일 삽화를 그려줘요.</p>
+
+    <div class="highlight" style="margin-bottom:40px;">
+      <h3>📷 사진을 미리 등록하면 더 잘 닮아요!</h3>
+      <ul>
+        <li>설정에서 아이, 엄마, 아빠 사진을 미리 등록해두세요</li>
+        <li>AI가 실제 인물의 얼굴과 헤어를 살려서 그림을 그려줘요</li>
+        <li>등록한 사진은 안전하게 보관되고 그림 생성에만 사용돼요</li>
+      </ul>
+    </div>
+
+    <p style="font-weight:700;font-size:1rem;margin-bottom:16px;">일기 입력 방법을 선택하세요</p>
+    <div class="mode-cards">
+      <div class="mode-card">
+        <span class="mode-card-icon">✏️</span>
+        <h3>직접 입력</h3>
+        <p>키보드로 일기를 직접 입력해요. 500자까지 쓸 수 있어요.</p>
+      </div>
+      <div class="mode-card">
+        <span class="mode-card-icon">📷</span>
+        <h3>사진으로 인식</h3>
+        <p>손으로 쓴 일기 공책을 사진으로 찍으면 AI가 글씨를 읽어줘요.</p>
+      </div>
+      <div class="mode-card">
+        <span class="mode-card-icon">🎤</span>
+        <h3>음성으로 말하기</h3>
+        <p>오늘 있었던 일을 말하면 자동으로 글로 변환돼요.</p>
+      </div>
+    </div>
+
+    <div class="steps" style="margin-top:40px;">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h3>일기 입력</h3>
+          <p>3가지 방법 중 편한 방법으로 오늘 일기를 입력하세요. 글씨를 수정하거나 추가할 수도 있어요.</p>
+          <div class="step-tip">💡 누가, 어디서, 무엇을 했는지 자세히 쓸수록 더 멋진 그림이 나와요!</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h3>등장인물 사진 확인</h3>
+          <p>AI가 일기에서 등장하는 사람들을 찾아요. 사진이 없는 인물은 이 화면에서 바로 추가할 수 있어요.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h3>그림 만들기!</h3>
+          <p>버튼을 누르면 약 20~40초 후 지브리 스타일의 삽화가 완성돼요. 사진을 등록한 경우 실제 인물과 더 비슷하게 그려져요.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h3>그림일기 카드 저장</h3>
+          <p>날짜, AI 삽화, 일기 텍스트가 하나의 그림일기 카드로 합쳐져요. 카드를 갤러리에 저장하거나 공유해보세요.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 설정 가이드 -->
+<section>
+  <div class="container">
+    <div class="section-label">SETUP</div>
+    <h2 class="section-title">⚙️ 처음 설정 가이드</h2>
+    <p class="section-desc">처음 가입 후 아이 정보를 설정하면 더 개인화된 그림일기를 만들 수 있어요.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <span class="card-icon">👤</span>
+        <h3>아이 이름 입력</h3>
+        <p>아이 이름을 입력하면 그림일기 속 주인공 이름이 실제 아이 이름으로 등장해요.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">🎂</span>
+        <h3>나이 & 성별 선택</h3>
+        <p>5~10세 중 선택하고 성별을 설정해요. AI가 나이에 맞는 적절한 어휘를 사용해요.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">📷</span>
+        <h3>가족 사진 등록</h3>
+        <p>아이, 엄마, 아빠 사진을 등록해두면 일기 그림에서 실제 인물과 닮은 모습으로 표현돼요.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">❤️</span>
+        <h3>관심사 입력 (선택)</h3>
+        <p>좋아하는 것, 친한 친구, 가족 구성, 반려동물을 입력하면 더 풍부한 그림일기가 만들어져요.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section>
+  <div class="container">
+    <div class="section-label">FAQ</div>
+    <h2 class="section-title">자주 묻는 질문</h2>
+    <p class="section-desc">궁금한 점이 있으신가요?</p>
+
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">어떤 기기에서 사용할 수 있나요?</button>
+        <div class="faq-a">스마트폰, 태블릿, PC 모두 지원해요. 웹 브라우저(크롬, 사파리)에서 별도 앱 설치 없이 바로 사용할 수 있어요. 모바일에서는 카메라와 마이크 기능을 더 편리하게 사용할 수 있어요.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">그림 생성에 얼마나 걸리나요?</button>
+        <div class="faq-a">그리기 변환은 약 30~60초, 일기 기반 그림 생성은 약 20~40초 정도 걸려요. 서버 상황에 따라 다소 차이가 있을 수 있어요.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">음성 입력이 안 될 때는 어떻게 하나요?</button>
+        <div class="faq-a">음성 입력은 Chrome 또는 Safari 브라우저에서 지원돼요. 마이크 접근 권한을 허용해주셨는지 확인해보세요. 음성 입력이 어렵다면 직접 입력이나 사진 인식 방법을 사용해주세요.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">등록한 가족 사진은 어떻게 관리되나요?</button>
+        <div class="faq-a">등록된 사진은 암호화된 안전한 서버에 보관되며, 오직 해당 계정의 그림 생성에만 사용돼요. 설정 화면에서 언제든지 사진을 변경하거나 삭제할 수 있어요.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">로그인은 어떻게 하나요?</button>
+        <div class="faq-a">카카오 계정으로 간편하게 로그인할 수 있어요. 별도 회원가입 없이 카카오 버튼 한 번으로 시작할 수 있어요.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">만든 그림일기를 공유할 수 있나요?</button>
+        <div class="faq-a">네! 완성된 그림일기를 카카오톡, 인스타그램, 갤러리 저장 등 다양한 방법으로 공유할 수 있어요. 모바일에서는 기기의 공유 기능을 통해 SNS에 바로 올릴 수 있어요.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section style="border-top:none;">
+  <div class="container">
+    <div class="cta-banner">
+      <h2>아이의 오늘을 영원히 기억해요</h2>
+      <p>지금 바로 시작해서 아이와 함께 특별한 그림일기를 만들어보세요.</p>
+      <a href="https://grimdong-fuee.vercel.app" target="_blank" class="cta-btn">
+        🎨 무료로 시작하기
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <p>© 2026 아이담. All rights reserved.</p>
+  <p style="margin-top:8px;"><a href="https://grimdong-fuee.vercel.app">grimdong-fuee.vercel.app</a></p>
+</footer>
+
+<script>
+  function toggleFaq(btn) {
+    const item = btn.closest('.faq-item');
+    item.classList.toggle('open');
+  }
+</script>
+
+</body>
+</html>
