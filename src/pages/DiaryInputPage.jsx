@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
@@ -11,16 +11,43 @@ function formatDateKr(date = new Date()) {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`
 }
 
+const MODES = [
+  { id: 'text',  icon: '✏️', label: '직접 입력' },
+  { id: 'photo', icon: '📷', label: '사진 인식' },
+  { id: 'voice', icon: '🎤', label: '음성 입력' },
+]
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => resolve(e.target.result.split(',')[1])
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 export default function DiaryInputPage() {
   const navigate  = useNavigate()
   const { user }  = useAuthStore()
   const { setDiaryText, setDiaryDate, setAnalyzedElements, setGeneratedImage } = useDiaryStore()
 
+  const [mode,      setMode]      = useState('text')
   const [text,      setText]      = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [elements,  setElements]  = useState(null)
   const [profile,   setProfile]   = useState(null)
+
+  // Photo OCR
+  const [ocrLoading,    setOcrLoading]    = useState(false)
+  const [photoPreview,  setPhotoPreview]  = useState(null)
+  const photoInputRef = useRef(null)
+
+  // Voice
+  const [recording, setRecording] = useState(false)
+  const [interim,   setInterim]   = useState('')
+  const recognitionRef = useRef(null)
+  const hasSpeechAPI = !!(window.SpeechRecognition || window.webkitSpeechRecognition)
 
   const dateLabel = formatDateKr()
 
@@ -30,6 +57,102 @@ export default function DiaryInputPage() {
       .then(({ data }) => setProfile(data ?? {}))
   }, [user])
 
+  // 모드 전환 시 음성 중지
+  useEffect(() => {
+    if (mode !== 'voice' && recording) {
+      recognitionRef.current?.stop()
+      setRecording(false)
+      setInterim('')
+    }
+  }, [mode])
+
+  // ── Photo OCR ──
+  const handlePhotoSelect = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    setPhotoPreview(URL.createObjectURL(file))
+    setOcrLoading(true)
+    try {
+      const base64   = await fileToBase64(file)
+      const mimeType = file.type || 'image/jpeg'
+
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              role: 'user',
+              parts: [
+                { inlineData: { mimeType, data: base64 } },
+                { text: '이 사진에서 어린이가 손으로 쓴 일기 텍스트를 읽어줘. 글씨체가 불분명해도 최대한 해석해서 순수 텍스트로만 출력해줘. 마크다운·설명 없이 일기 내용만 출력.' },
+              ],
+            }],
+            generationConfig: {
+              maxOutputTokens: 500,
+              thinkingConfig: { thinkingBudget: 0 },
+            },
+          }),
+        }
+      )
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error?.message ?? `Gemini ${res.status}`)
+
+      const extracted = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      if (!extracted.trim()) throw new Error('텍스트를 인식하지 못했어요')
+      setText(extracted.trim())
+      toast.success('일기 내용을 인식했어요! ✨')
+    } catch (err) {
+      console.error('[OCR 에러]', err)
+      toast.error('사진 인식에 실패했어요. 다시 시도해주세요!')
+    } finally {
+      setOcrLoading(false)
+    }
+  }
+
+  // ── Voice ──
+  const toggleRecording = () => {
+    if (!hasSpeechAPI) {
+      toast.error('이 브라우저에서는 음성 입력이 지원되지 않아요.')
+      return
+    }
+    if (recording) {
+      recognitionRef.current?.stop()
+      return
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    const rec = new SpeechRecognition()
+    rec.lang = 'ko-KR'
+    rec.continuous = true
+    rec.interimResults = true
+
+    rec.onstart  = () => { setRecording(true); setInterim('') }
+    rec.onend    = () => { setRecording(false); setInterim('') }
+    rec.onerror  = (e) => {
+      if (e.error !== 'aborted') toast.error('음성 인식 오류가 발생했어요.')
+      setRecording(false)
+      setInterim('')
+    }
+    rec.onresult = (e) => {
+      let finalPart = ''
+      let interimPart = ''
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalPart += e.results[i][0].transcript
+        else interimPart += e.results[i][0].transcript
+      }
+      if (finalPart) setText((prev) => prev ? prev + ' ' + finalPart : finalPart)
+      setInterim(interimPart)
+    }
+
+    recognitionRef.current = rec
+    rec.start()
+  }
+
+  // ── Gemini 분석 ──
   const handleAnalyze = async () => {
     const trimmed = text.trim()
     if (trimmed.length < 10) { toast.error('일기를 조금 더 써주세요! ✏️'); return }
@@ -105,10 +228,99 @@ export default function DiaryInputPage() {
           <span>{dateLabel}</span>
         </div>
 
+        {/* 입력 모드 선택 탭 */}
+        <div className={styles.modeTabs}>
+          {MODES.map(({ id, icon, label }) => (
+            <button
+              key={id}
+              className={`${styles.modeTab} ${mode === id ? styles.modeTabActive : ''}`}
+              onClick={() => setMode(id)}
+            >
+              <span className={styles.modeIcon}>{icon}</span>
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* 사진 인식 모드 */}
+        {mode === 'photo' && (
+          <div className={styles.photoSection}>
+            <button
+              className={styles.photoUploadBtn}
+              onClick={() => photoInputRef.current?.click()}
+              disabled={ocrLoading}
+            >
+              {ocrLoading ? (
+                <><span>⏳</span><span>손글씨 읽는 중...</span></>
+              ) : photoPreview ? (
+                <><span>🔄</span><span>다시 찍기</span></>
+              ) : (
+                <><span className={styles.photoUploadIcon}>📷</span><span>일기 사진 찍기 / 불러오기</span></>
+              )}
+            </button>
+
+            {photoPreview && (
+              <div className={styles.photoPreviewWrap}>
+                <img src={photoPreview} alt="일기 사진" className={styles.photoPreview} />
+                {ocrLoading && <div className={styles.ocrOverlay}><span className={styles.ocrSpinner} /></div>}
+              </div>
+            )}
+
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: 'none' }}
+              onChange={handlePhotoSelect}
+            />
+          </div>
+        )}
+
+        {/* 음성 입력 모드 */}
+        {mode === 'voice' && (
+          <div className={styles.voiceSection}>
+            {!hasSpeechAPI ? (
+              <p className={styles.voiceUnsupported}>
+                이 브라우저에서는 음성 입력이 지원되지 않아요.<br />Chrome 또는 Safari를 사용해주세요.
+              </p>
+            ) : (
+              <>
+                <button
+                  className={`${styles.micBtn} ${recording ? styles.micBtnRecording : ''}`}
+                  onClick={toggleRecording}
+                >
+                  <span className={styles.micIcon}>{recording ? '⏹' : '🎤'}</span>
+                  <span className={styles.micLabel}>{recording ? '탭하여 중지' : '탭하여 말하기'}</span>
+                </button>
+                {recording && (
+                  <div className={styles.recordingBadge}>
+                    <span className={styles.recordingDot} />
+                    <span>듣고 있어요...</span>
+                  </div>
+                )}
+                {recording && interim && (
+                  <p className={styles.interimText}>{interim}</p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* 공통 텍스트 입력 영역 */}
         <div className={styles.textareaWrap}>
+          {(mode === 'photo' || mode === 'voice') && text && (
+            <p className={styles.editHint}>✏️ 인식된 내용이에요. 수정도 가능해요!</p>
+          )}
           <textarea
             className={styles.textarea}
-            placeholder={`오늘 있었던 일을 써보세요!\n\n예) 오늘 놀이터에서 지유랑 미끄럼틀을 탔어요. 엄마가 벤치에 앉아서 응원해줬어요. 너무 재미있었어요.`}
+            placeholder={
+              mode === 'photo'
+                ? '사진을 찍으면 일기 내용이 여기에 나타나요!\n직접 수정도 가능해요.'
+                : mode === 'voice'
+                ? '말하면 일기 내용이 여기에 나타나요!\n직접 수정도 가능해요.'
+                : `오늘 있었던 일을 써보세요!\n\n예) 오늘 놀이터에서 지유랑 미끄럼틀을 탔어요. 엄마가 벤치에 앉아서 응원해줬어요. 너무 재미있었어요.`
+            }
             value={text}
             onChange={(e) => setText(e.target.value)}
             maxLength={500}
