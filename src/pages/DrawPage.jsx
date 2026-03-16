@@ -453,11 +453,15 @@ export default function DrawPage() {
         }
       )
       const data = await res.json()
+      console.log('[Gemini 응답 전체]', JSON.stringify(data, null, 2))
       if (!res.ok) throw new Error(data.error?.message ?? `Gemini ${res.status}`)
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-      // 마크다운 코드펜스 제거 → JSON 객체만 추출 후 파싱
+      const candidate = data.candidates?.[0]
+      const finishReason = candidate?.finishReason
+      const rawText = candidate?.content?.parts?.[0]?.text ?? ''
+      console.log('[Gemini finishReason]', finishReason, '[rawText]', rawText)
+      if (!rawText) throw new Error(`Gemini 응답 없음 (finishReason: ${finishReason})`)
       const match = rawText.match(/\{[\s\S]*\}/)
-      if (!match) throw new Error('JSON 응답을 찾을 수 없어요.')
+      if (!match) throw new Error(`JSON 파싱 실패. 원문: ${rawText.slice(0, 200)}`)
       const story = JSON.parse(match[0])
       const blob = await fetch(dataUrl).then((r) => r.blob())
       const fileName = `${user.id}/${Date.now()}.jpg`
