@@ -193,6 +193,8 @@ export default function DrawPage() {
         })
         historyRef.current = [JSON.stringify(canvas.toObject())]; historyIdxRef.current = 0; setCanUndo(false); return
       }
+      // ② 경로는 선택 불가 — 스티커(FabricText)만 객체 선택 허용
+      e.path.set({ selectable: false, evented: false })
       // ③ 선 스타일 적용
       const style = lineStyleRef.current
       if (style === 'dash') { e.path.set({ strokeDashArray: [24, 8] }); canvas.renderAll() }
@@ -372,7 +374,7 @@ export default function DrawPage() {
     const canvas = fabricRef.current
     await canvas.loadFromJSON(JSON.parse(historyRef.current[historyIdxRef.current]))
     canvas.backgroundColor = '#FFFFFF'
-    canvas.getObjects().forEach((obj) => { if (obj.type==='image') { obj.selectable=false; obj.evented=false } })
+    canvas.getObjects().forEach((obj) => { if (obj.type==='image' || obj.type==='path') { obj.selectable=false; obj.evented=false } })
     canvas.renderAll(); setCanUndo(historyIdxRef.current > 0)
     if (canvas.getObjects().length === 0) setPhotoSelected(false)
   }
@@ -644,6 +646,9 @@ export default function DrawPage() {
                   </div>
                 )}
 
+                {/* 확인 — 패널 닫기 */}
+                <button className={styles.panelCloseBtn} onClick={() => setActivePanel(null)}>✔ 완료</button>
+
               </div>
             )}
 
@@ -666,6 +671,8 @@ export default function DrawPage() {
                     </button>
                   ))}
                 </div>
+                {/* 확인 — 패널 닫기 */}
+                <button className={styles.panelCloseBtn} onClick={() => setActivePanel(null)}>✔ 완료</button>
               </div>
             )}
           </>

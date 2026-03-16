@@ -860,6 +860,23 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* 패널 닫기 확인 버튼 */
+.panelCloseBtn {
+  width: 100%;
+  padding: 10px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-family: var(--font-kr-body);
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-top: 2px;
+}
+.panelCloseBtn:hover { opacity: 0.88; }
+
 /* ── 도구 그리드 (7열) ── */
 .toolGrid {
   display: grid;
