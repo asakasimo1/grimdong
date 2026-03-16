@@ -64,73 +64,60 @@ export default function TransformModal() {
     setTransforming(true)
     try {
       const styleObj = TRANSFORM_STYLES.find((s) => s.key === style)
-      const authHeader = `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
 
       if (mode === 'draw') {
-        // Draw: GPT-4o Vision으로 묘사 → DALL-E 3 생성 (안전 필터 우회)
+        // ① Gemini 2.5 Flash Vision — 그림 묘사 (영문)
         const b64 = canvasDataUrl.split(',')[1]
+        const geminiRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                role: 'user',
+                parts: [
+                  { text: "Describe this child's drawing briefly in English for image generation. Identify objects, characters, colors, and scene. Under 80 words." },
+                  { inline_data: { mime_type: 'image/png', data: b64 } },
+                ],
+              }],
+              generationConfig: { maxOutputTokens: 120 },
+            }),
+          }
+        )
+        const geminiData = await geminiRes.json()
+        const description = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
+          ?? "a colorful children's drawing with simple shapes"
 
-        const visionRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        // ② fal.ai FLUX.2 [dev] — 스타일 이미지 생성
+        const transformRes = await fetch('/api/transform', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: 'gpt-4o',
-            messages: [{
-              role: 'user',
-              content: [
-                { type: 'text', text: "Describe this child's drawing briefly in English for image generation. Identify objects, characters, colors, and scene. Under 80 words." },
-                { type: 'image_url', image_url: { url: `data:image/png;base64,${b64}`, detail: 'low' } },
-              ],
-            }],
-            max_tokens: 120,
-          }),
-        })
-        const visionData = await visionRes.json()
-        const description = visionData.choices?.[0]?.message?.content ?? "a colorful children's drawing with simple shapes"
-
-        const dalleRes = await fetch('https://api.openai.com/v1/images/generations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
-          body: JSON.stringify({
-            model: 'dall-e-3',
+            mode: 'draw',
             prompt: `${styleObj.drawPrompt} The scene: ${description}. Strictly family-friendly, safe for children, no violence, no adult content.`,
-            n: 1,
-            size: '1024x1024',
-            quality: 'standard',
-            response_format: 'b64_json',
           }),
         })
-        const dalleData = await dalleRes.json()
-        if (!dalleRes.ok) throw new Error(dalleData.error?.message ?? `HTTP ${dalleRes.status}`)
-        const dalleB64 = dalleData.data?.[0]?.b64_json
-        if (!dalleB64) throw new Error('NO_IMAGE')
-        setTransformedImg(`data:image/png;base64,${dalleB64}`)
+        const transformData = await transformRes.json()
+        if (!transformRes.ok) throw new Error(transformData.error ?? `HTTP ${transformRes.status}`)
+        if (!transformData.imageData) throw new Error('NO_IMAGE')
+        setTransformedImg(transformData.imageData)
 
       } else {
-        // Photo: gpt-image-1 edit (원본 구도 유지)
-        const pngBlob = await fetch(canvasDataUrl).then((r) => r.blob())
-        const file = new File([pngBlob], 'photo.png', { type: 'image/png' })
-
-        const formData = new FormData()
-        formData.append('image', file)
-        formData.append('prompt', `${styleObj.photoPrompt} Strictly family-friendly, safe for all ages, appropriate content.`)
-        formData.append('model', 'gpt-image-1')
-        formData.append('n', '1')
-        formData.append('size', '1024x1024')
-
-        const editRes = await fetch('https://api.openai.com/v1/images/edits', {
+        // Photo: fal.ai FLUX.1 Kontext [dev] — 이미지 편집 (원본 구도 유지)
+        const transformRes = await fetch('/api/transform', {
           method: 'POST',
-          headers: { 'Authorization': authHeader },
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'photo',
+            prompt: `${styleObj.photoPrompt} Strictly family-friendly, safe for all ages, appropriate content.`,
+            imageUrl: canvasDataUrl,
+          }),
         })
-        const editData = await editRes.json()
-        if (!editRes.ok) throw new Error(editData.error?.message ?? `HTTP ${editRes.status}`)
-
-        const b64img = editData.data?.[0]?.b64_json
-        const imgUrl = editData.data?.[0]?.url
-        if (b64img) setTransformedImg(`data:image/png;base64,${b64img}`)
-        else if (imgUrl) setTransformedImg(imgUrl)
-        else throw new Error('NO_IMAGE')
+        const transformData = await transformRes.json()
+        if (!transformRes.ok) throw new Error(transformData.error ?? `HTTP ${transformRes.status}`)
+        if (!transformData.imageData) throw new Error('NO_IMAGE')
+        setTransformedImg(transformData.imageData)
       }
     } catch (err) {
       console.error('[변환 에러]', err)
