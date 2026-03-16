@@ -446,7 +446,6 @@ export default function DrawPage() {
               ],
             }],
             generationConfig: {
-              responseMimeType: 'application/json',
               temperature: 0.85,
               maxOutputTokens: 1200,
             },
@@ -456,9 +455,10 @@ export default function DrawPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error?.message ?? `Gemini ${res.status}`)
       const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-      // 마크다운 코드펜스 제거 후 파싱
-      const jsonText = rawText.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim()
-      const story = JSON.parse(jsonText)
+      // 마크다운 코드펜스 제거 → JSON 객체만 추출 후 파싱
+      const match = rawText.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('JSON 응답을 찾을 수 없어요.')
+      const story = JSON.parse(match[0])
       const blob = await fetch(dataUrl).then((r) => r.blob())
       const fileName = `${user.id}/${Date.now()}.jpg`
       const { error: uploadError } = await supabase.storage.from('drawings').upload(fileName, blob, { contentType:'image/jpeg' })
