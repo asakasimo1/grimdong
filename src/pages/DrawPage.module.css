@@ -1,11 +1,13 @@
 .wrap {
-  min-height: 100dvh;
+  height: 100dvh;
   max-width: 520px;
   margin: 0 auto;
-  padding: 0 20px 32px;
+  padding: 0 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow: hidden;
+  position: relative;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -14,8 +16,8 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 16px 0;
-  margin-bottom: 12px;
+  padding: 10px 0;
+  flex-shrink: 0;
 }
 
 .title {
@@ -55,7 +57,19 @@
   display: flex;
   gap: 8px;
   width: 100%;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+/* 캔버스 영역 — flex:1 로 남은 공간 채움 */
+.canvasArea {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* 드로잉 툴 선택 */
@@ -171,7 +185,6 @@
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 4px 24px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -286,9 +299,8 @@
 .frameBtnActive .frameBtnLabel { color: var(--color-primary); }
 
 .photoPickerArea {
+  flex: 1;
   width: 100%;
-  aspect-ratio: 1 / 1;
-  max-width: 480px;
   border-radius: 20px;
   background: #fafafa;
   border: 2px dashed var(--color-border);
@@ -297,7 +309,6 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-bottom: 20px;
 }
 
 .photoPickerText {
@@ -327,7 +338,8 @@
   display: flex;
   gap: 10px;
   width: 100%;
-  margin-bottom: 14px;
+  margin-top: 8px;
+  flex-shrink: 0;
   justify-content: center;
 }
 
@@ -470,6 +482,16 @@
 }
 .sizeBtn.active { border-color: var(--color-primary); }
 
+/* 하단 액션 영역 */
+.bottomActions {
+  flex-shrink: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0 20px;
+}
+
 .transformBtn {
   width: 100%;
   padding: 14px;
@@ -479,7 +501,6 @@
   border-radius: 18px;
   font-size: 1rem;
   font-family: var(--font-kr-display);
-  margin-bottom: 10px;
   transition: background 0.15s;
 }
 .transformBtn:hover:not(:disabled) { background: var(--color-secondary); }
@@ -778,7 +799,8 @@
   display: flex;
   gap: 6px;
   width: 100%;
-  margin-bottom: 6px;
+  flex-shrink: 0;
+  margin-top: auto;
 }
 
 .panelToggle {
@@ -813,9 +835,13 @@
   flex-shrink: 0;
 }
 
-/* 패널 콘텐츠 — 카드형 */
+/* 패널 콘텐츠 — 캔버스 위 플로팅 오버레이 */
 .panelContent {
-  width: 100%;
+  position: absolute;
+  bottom: 54px;   /* panelBar 높이 위 */
+  left: 0;
+  right: 0;
+  z-index: 20;
   background: #fff;
   border: 1.5px solid var(--color-border);
   border-radius: 16px;
@@ -823,7 +849,9 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 10px;
+  max-height: 48dvh;
+  overflow-y: auto;
+  box-shadow: 0 -2px 16px rgba(0,0,0,0.10);
   animation: slideDown 0.14s ease;
 }
 

@@ -130,7 +130,7 @@ export default function DrawPage() {
   const colorRef      = useRef('#FF1744')
   const user          = useAuthStore((s) => s.user)
   const openTransform = useTransformStore((s) => s.open)
-  const [canvasSize]  = useState(() => Math.min(window.innerWidth - 40, 480))
+  const [canvasSize]  = useState(() => Math.min(window.innerWidth - 32, window.innerHeight - 310, 480))
 
   const [profile,         setProfile]         = useState(null)
   const [color,           setColor]           = useState('#FF1744')
@@ -169,7 +169,7 @@ export default function DrawPage() {
   // Fabric.js 초기화
   useEffect(() => {
     if (fabricRef.current) return
-    const sz = Math.min(window.innerWidth - 40, 480)
+    const sz = Math.min(window.innerWidth - 32, window.innerHeight - 310, 480)
     const canvas = new Canvas(canvasEl.current, {
       isDrawingMode: true, backgroundColor: '#FFFFFF',
       width: sz, height: sz,
@@ -502,181 +502,189 @@ export default function DrawPage() {
 
       <input id="galleryFileInput" ref={galleryRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleGallerySelect} />
 
-      {/* 사진 선택 UI */}
-      {mode === 'photo' && !photoSelected && (
-        <div className={styles.photoPickerArea}>
-          <span className={styles.photoIcon}>📸</span>
-          <p className={styles.photoPickerText}>사진을 선택해주세요</p>
-          <div className={styles.overlayButtons}>
-            <button className={styles.overlayBtn} onClick={openCamera}>📷 카메라</button>
-            <label htmlFor="galleryFileInput" className={styles.overlayBtn}>🖼️ 갤러리</label>
-          </div>
-        </div>
-      )}
+      {/* ── 캔버스 영역 (flex:1, 남은 공간 채움) ── */}
+      <div className={styles.canvasArea}>
 
-      {/* 캔버스 */}
-      <div
-        className={styles.canvasWrap}
-        style={mode==='photo' && !photoSelected ? {height:0, overflow:'hidden', marginBottom:0} : {width:canvasSize, height:canvasSize}}
-      >
-        <canvas ref={canvasEl} />
-        {frame && (
-          <div
-            className={[styles.frameOverlay, frame==='rainbow' ? styles.frameRainbow : '', frame==='unicorn' ? styles.frameUnicorn : ''].join(' ')}
-            style={FRAME_DATA[frame].color ? {borderColor:FRAME_DATA[frame].color} : {}}
-          >
-            <span className={styles.fc}>{FRAME_DATA[frame].emoji}</span>
-            <span className={styles.fc}>{FRAME_DATA[frame].emoji}</span>
-            <span className={styles.fc}>{FRAME_DATA[frame].emoji}</span>
-            <span className={styles.fc}>{FRAME_DATA[frame].emoji}</span>
+        {/* 사진 선택 UI */}
+        {mode === 'photo' && !photoSelected && (
+          <div className={styles.photoPickerArea}>
+            <span className={styles.photoIcon}>📸</span>
+            <p className={styles.photoPickerText}>사진을 선택해주세요</p>
+            <div className={styles.overlayButtons}>
+              <button className={styles.overlayBtn} onClick={openCamera}>📷 카메라</button>
+              <label htmlFor="galleryFileInput" className={styles.overlayBtn}>🖼️ 갤러리</label>
+            </div>
           </div>
         )}
-      </div>
 
-      {/* 사진 변경 */}
-      {mode === 'photo' && photoSelected && (
-        <div className={styles.photoButtons}>
-          <button className={styles.changePhotoBtn} onClick={openCamera}>📷 다시 찍기</button>
-          <label htmlFor="galleryFileInput" className={styles.changePhotoBtn}>🖼️ 다른 사진</label>
+        {/* 캔버스 */}
+        <div
+          className={styles.canvasWrap}
+          style={mode==='photo' && !photoSelected ? {height:0, overflow:'hidden'} : {width:canvasSize, height:canvasSize}}
+        >
+          <canvas ref={canvasEl} />
+          {frame && (
+            <div
+              className={[styles.frameOverlay, frame==='rainbow' ? styles.frameRainbow : '', frame==='unicorn' ? styles.frameUnicorn : ''].join(' ')}
+              style={FRAME_DATA[frame].color ? {borderColor:FRAME_DATA[frame].color} : {}}
+            >
+              <span className={styles.fc}>{FRAME_DATA[frame].emoji}</span>
+              <span className={styles.fc}>{FRAME_DATA[frame].emoji}</span>
+              <span className={styles.fc}>{FRAME_DATA[frame].emoji}</span>
+              <span className={styles.fc}>{FRAME_DATA[frame].emoji}</span>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* ── 그리기 도구 (접이식 패널) ── */}
-      {mode === 'draw' && (
-        <>
-          {/* 패널 토글 바 */}
-          <div className={styles.panelBar}>
-            <button
-              className={`${styles.panelToggle} ${activePanel==='draw' ? styles.panelToggleOpen : ''}`}
-              onClick={() => setActivePanel((p) => p==='draw' ? null : 'draw')}>
-              <span>🖊️ 도구 · 색상</span>
-              <span className={styles.chevron}>{activePanel==='draw' ? '▲' : '▼'}</span>
-            </button>
-            <button
-              className={`${styles.panelToggle} ${activePanel==='frame' ? styles.panelToggleOpen : ''}`}
-              onClick={() => setActivePanel((p) => p==='frame' ? null : 'frame')}>
-              <span>🖼️ 액자</span>
-              <span className={styles.chevron}>{activePanel==='frame' ? '▲' : '▼'}</span>
-            </button>
+        {/* 사진 변경 */}
+        {mode === 'photo' && photoSelected && (
+          <div className={styles.photoButtons}>
+            <button className={styles.changePhotoBtn} onClick={openCamera}>📷 다시 찍기</button>
+            <label htmlFor="galleryFileInput" className={styles.changePhotoBtn}>🖼️ 다른 사진</label>
           </div>
+        )}
 
-          {/* 도구 · 색상 패널 */}
-          {activePanel === 'draw' && (
-            <div className={styles.panelContent}>
+        {/* ── 그리기 도구 (접이식 패널, margin-top:auto로 하단 고정) ── */}
+        {mode === 'draw' && (
+          <>
+            {/* 패널 토글 바 */}
+            <div className={styles.panelBar}>
+              <button
+                className={`${styles.panelToggle} ${activePanel==='draw' ? styles.panelToggleOpen : ''}`}
+                onClick={() => setActivePanel((p) => p==='draw' ? null : 'draw')}>
+                <span>🖊️ 도구 · 색상</span>
+                <span className={styles.chevron}>{activePanel==='draw' ? '▲' : '▼'}</span>
+              </button>
+              <button
+                className={`${styles.panelToggle} ${activePanel==='frame' ? styles.panelToggleOpen : ''}`}
+                onClick={() => setActivePanel((p) => p==='frame' ? null : 'frame')}>
+                <span>🖼️ 액자</span>
+                <span className={styles.chevron}>{activePanel==='frame' ? '▲' : '▼'}</span>
+              </button>
+            </div>
 
-              {/* 도구 선택 */}
-              <div className={styles.toolGrid}>
-                {TOOLS.map((t) => (
-                  <button key={t.key}
-                    className={`${styles.toolChip} ${drawTool===t.key ? styles.toolChipActive : ''}`}
-                    onClick={() => handleDrawToolChange(t.key)}>
-                    <span className={styles.toolChipIcon}>
-                      {t.emoji ?? <EraserIcon />}
-                    </span>
-                    <span className={styles.toolChipLabel}>{t.label}</span>
-                  </button>
-                ))}
-              </div>
+            {/* 도구 · 색상 패널 — 캔버스 위 플로팅 오버레이 */}
+            {activePanel === 'draw' && (
+              <div className={styles.panelContent}>
 
-              {/* 스티커 카테고리 */}
-              {drawTool === 'sticker' && (
-                <>
-                  <div className={styles.stickerCatTabs}>
-                    {Object.keys(STICKER_CATEGORIES).map((cat) => (
-                      <button key={cat}
-                        className={`${styles.stickerCatTab} ${stickerCat===cat ? styles.stickerCatTabActive : ''}`}
-                        onClick={() => setStickerCat(cat)}>{cat}</button>
-                    ))}
-                  </div>
-                  <div className={styles.stickerRow}>
-                    {STICKER_CATEGORIES[stickerCat].map((s) => (
-                      <button key={s}
-                        className={`${styles.stickerBtn} ${selectedSticker===s ? styles.stickerBtnActive : ''}`}
-                        onClick={() => setSelectedSticker(s)}>{s}</button>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {/* 색상 팔레트 */}
-              {drawTool !== 'sticker' && drawTool !== 'rainbow' && drawTool !== 'glitter' && drawTool !== 'eraser' && (
-                <div className={styles.paletteCompact}>
-                  {COLORS.map((c) => (
-                    <button key={c}
-                      className={`${styles.colorDot} ${color===c ? styles.active : ''}`}
-                      style={{background:c, border:c==='#FFFFFF' ? '2px solid #ddd' : 'none'}}
-                      onClick={() => setColor(c)} />
-                  ))}
-                  <label htmlFor="colorPickerInput" className={`${styles.colorDot} ${styles.colorPickerBtn}`}>
-                    <span className={styles.colorPickerRainbow} />
-                  </label>
-                  <input id="colorPickerInput" type="color" value={color}
-                    onChange={(e) => setColor(e.target.value)} style={{display:'none'}} />
-                </div>
-              )}
-
-              {/* 선 종류 (연필만) */}
-              {drawTool === 'pencil' && (
-                <div className={styles.lineStyleRow}>
-                  {LINE_STYLES.map((s) => (
-                    <button key={s.key}
-                      className={`${styles.lineStyleBtn} ${lineStyle===s.key ? styles.lineStyleBtnActive : ''}`}
-                      onClick={() => setLineStyle(s.key)}>
-                      <span className={styles.lineStyleIcon}>{s.label}</span>
-                      <span className={styles.lineStyleDesc}>{s.desc}</span>
+                {/* 도구 선택 */}
+                <div className={styles.toolGrid}>
+                  {TOOLS.map((t) => (
+                    <button key={t.key}
+                      className={`${styles.toolChip} ${drawTool===t.key ? styles.toolChipActive : ''}`}
+                      onClick={() => handleDrawToolChange(t.key)}>
+                      <span className={styles.toolChipIcon}>
+                        {t.emoji ?? <EraserIcon />}
+                      </span>
+                      <span className={styles.toolChipLabel}>{t.label}</span>
                     </button>
                   ))}
                 </div>
-              )}
 
-              {/* 크기 */}
-              {drawTool !== 'sticker' && (
-                <div className={styles.sizesCompact}>
-                  <span className={styles.sizesLabel}>크기</span>
-                  {SIZES.map((s) => (
-                    <button key={s} className={`${styles.sizeBtn} ${size===s ? styles.active : ''}`} onClick={() => setSize(s)}>
-                      <span style={{width:s, height:s, borderRadius:'50%', background: isEraser ? '#999' : '#1A1A2E', display:'inline-block'}} />
+                {/* 스티커 카테고리 */}
+                {drawTool === 'sticker' && (
+                  <>
+                    <div className={styles.stickerCatTabs}>
+                      {Object.keys(STICKER_CATEGORIES).map((cat) => (
+                        <button key={cat}
+                          className={`${styles.stickerCatTab} ${stickerCat===cat ? styles.stickerCatTabActive : ''}`}
+                          onClick={() => setStickerCat(cat)}>{cat}</button>
+                      ))}
+                    </div>
+                    <div className={styles.stickerRow}>
+                      {STICKER_CATEGORIES[stickerCat].map((s) => (
+                        <button key={s}
+                          className={`${styles.stickerBtn} ${selectedSticker===s ? styles.stickerBtnActive : ''}`}
+                          onClick={() => setSelectedSticker(s)}>{s}</button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* 색상 팔레트 */}
+                {drawTool !== 'sticker' && drawTool !== 'rainbow' && drawTool !== 'glitter' && drawTool !== 'eraser' && (
+                  <div className={styles.paletteCompact}>
+                    {COLORS.map((c) => (
+                      <button key={c}
+                        className={`${styles.colorDot} ${color===c ? styles.active : ''}`}
+                        style={{background:c, border:c==='#FFFFFF' ? '2px solid #ddd' : 'none'}}
+                        onClick={() => setColor(c)} />
+                    ))}
+                    <label htmlFor="colorPickerInput" className={`${styles.colorDot} ${styles.colorPickerBtn}`}>
+                      <span className={styles.colorPickerRainbow} />
+                    </label>
+                    <input id="colorPickerInput" type="color" value={color}
+                      onChange={(e) => setColor(e.target.value)} style={{display:'none'}} />
+                  </div>
+                )}
+
+                {/* 선 종류 (연필만) */}
+                {drawTool === 'pencil' && (
+                  <div className={styles.lineStyleRow}>
+                    {LINE_STYLES.map((s) => (
+                      <button key={s.key}
+                        className={`${styles.lineStyleBtn} ${lineStyle===s.key ? styles.lineStyleBtnActive : ''}`}
+                        onClick={() => setLineStyle(s.key)}>
+                        <span className={styles.lineStyleIcon}>{s.label}</span>
+                        <span className={styles.lineStyleDesc}>{s.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* 크기 */}
+                {drawTool !== 'sticker' && (
+                  <div className={styles.sizesCompact}>
+                    <span className={styles.sizesLabel}>크기</span>
+                    {SIZES.map((s) => (
+                      <button key={s} className={`${styles.sizeBtn} ${size===s ? styles.active : ''}`} onClick={() => setSize(s)}>
+                        <span style={{width:s, height:s, borderRadius:'50%', background: isEraser ? '#999' : '#1A1A2E', display:'inline-block'}} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+              </div>
+            )}
+
+            {/* 액자 패널 — 캔버스 위 플로팅 오버레이 */}
+            {activePanel === 'frame' && (
+              <div className={styles.panelContent}>
+                <div className={styles.frameGrid}>
+                  <button
+                    className={`${styles.frameBtn} ${frame===null ? styles.frameBtnActive : ''}`}
+                    onClick={() => setFrame(null)}>
+                    <span className={styles.frameBtnEmoji}>✕</span>
+                    <span className={styles.frameBtnLabel}>없음</span>
+                  </button>
+                  {Object.entries(FRAME_DATA).map(([key, data]) => (
+                    <button key={key}
+                      className={`${styles.frameBtn} ${frame===key ? styles.frameBtnActive : ''}`}
+                      onClick={() => setFrame(frame===key ? null : key)}>
+                      <span className={styles.frameBtnEmoji}>{data.emoji}</span>
+                      <span className={styles.frameBtnLabel}>{data.label}</span>
                     </button>
                   ))}
                 </div>
-              )}
-
-            </div>
-          )}
-
-          {/* 액자 패널 */}
-          {activePanel === 'frame' && (
-            <div className={styles.panelContent}>
-              <div className={styles.frameGrid}>
-                <button
-                  className={`${styles.frameBtn} ${frame===null ? styles.frameBtnActive : ''}`}
-                  onClick={() => setFrame(null)}>
-                  <span className={styles.frameBtnEmoji}>✕</span>
-                  <span className={styles.frameBtnLabel}>없음</span>
-                </button>
-                {Object.entries(FRAME_DATA).map(([key, data]) => (
-                  <button key={key}
-                    className={`${styles.frameBtn} ${frame===key ? styles.frameBtnActive : ''}`}
-                    onClick={() => setFrame(frame===key ? null : key)}>
-                    <span className={styles.frameBtnEmoji}>{data.emoji}</span>
-                    <span className={styles.frameBtnLabel}>{data.label}</span>
-                  </button>
-                ))}
               </div>
-            </div>
-          )}
-        </>
-      )}
+            )}
+          </>
+        )}
 
-      {/* AI 변환 */}
-      <button className={styles.transformBtn} onClick={handleOpenTransform} disabled={loading}>
-        ✨ AI로 그림 변환하기
-      </button>
+      </div>{/* /canvasArea */}
 
-      {/* 동화 만들기 */}
-      <button className={styles.genBtn} onClick={() => handleGenerate()} disabled={loading}>
-        {loading ? '그림일기 쓰는 중... ✏️' : '📔 그림일기로 만들기!'}
-      </button>
+      {/* ── 하단 액션 버튼 (flex-shrink:0, 항상 화면 하단 고정) ── */}
+      <div className={styles.bottomActions}>
+        {/* AI 변환 */}
+        <button className={styles.transformBtn} onClick={handleOpenTransform} disabled={loading}>
+          ✨ AI로 그림 변환하기
+        </button>
+
+        {/* 동화 만들기 */}
+        <button className={styles.genBtn} onClick={() => handleGenerate()} disabled={loading}>
+          {loading ? '그림일기 쓰는 중... ✏️' : '📔 그림일기로 만들기!'}
+        </button>
+      </div>
 
       {/* 카메라 모달 */}
       {showCamera && createPortal(
