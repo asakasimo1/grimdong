@@ -69,7 +69,10 @@ export default function DiaryResultPage() {
         date:       new Date().toISOString().split('T')[0],
         diary_text: diaryText,
         image_url:  publicUrl,
-        elements:   analyzedElements ?? {},
+        elements:   {
+          ...(analyzedElements ?? {}),
+          ...(diaryWeather ? { weather: { id: diaryWeather.id, icon: diaryWeather.icon, label: diaryWeather.label } } : {}),
+        },
       })
       if (dbErr) throw dbErr
 

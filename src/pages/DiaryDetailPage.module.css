@@ -48,6 +48,15 @@
   font-weight: 600;
   margin-bottom: 16px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.weatherIcon {
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 .cardWrap {

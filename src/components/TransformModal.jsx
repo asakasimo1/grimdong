@@ -174,8 +174,13 @@ export default function TransformModal() {
       )}
 
       {/* AI 변환 모달 */}
-      <div className={styles.modalBackdrop}>
-        <div className={styles.modal}>
+      <div
+        className={styles.modalBackdrop}
+        onPointerDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => { e.stopPropagation(); e.preventDefault() }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
           <button className={styles.closeBtn} disabled={transforming} onClick={close}>✕</button>
           <h2 className={styles.modalTitle}>✨ AI 그림 변환</h2>
           {!transformedImg ? (

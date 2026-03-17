@@ -80,7 +80,12 @@ export default function DiaryDetailPage() {
         <button className={styles.deleteBtn} onClick={handleDelete}>🗑️</button>
       </header>
 
-      <div className={styles.dateLabel}>{formatDate(diary.date)}</div>
+      <div className={styles.dateLabel}>
+        {formatDate(diary.date)}
+        {diary.elements?.weather?.icon && (
+          <span className={styles.weatherIcon}>{diary.elements.weather.icon}</span>
+        )}
+      </div>
 
       <div className={styles.cardWrap}>
         <img src={diary.image_url} alt="그림일기" className={styles.cardImg} />
