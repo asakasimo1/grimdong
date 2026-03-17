@@ -379,6 +379,122 @@
 .sun { color: #e74c3c; }
 .sat { color: #3D5AFE; }
 
+/* ── 스트릭 + 배지 ── */
+.streakSection {
+  margin-bottom: 20px;
+}
+
+.streakRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.streakFire { font-size: 1.2rem; }
+
+.streakLabel {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.badgeScroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.badgeScroll::-webkit-scrollbar { display: none; }
+
+.badgeItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  width: 56px;
+  padding: 8px 4px 6px;
+  border-radius: 12px;
+  transition: transform 0.15s;
+}
+
+.badgeEarned {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(61, 90, 254, 0.15);
+}
+.badgeEarned:hover { transform: scale(1.06); }
+
+.badgeLocked {
+  background: var(--color-surface);
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
+.badgeIcon { font-size: 1.4rem; line-height: 1; }
+
+.badgeLabel {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-align: center;
+  line-height: 1.2;
+  word-break: keep-all;
+}
+
+/* ── 오늘의 주제 카드 ── */
+.topicCard {
+  border-radius: 16px;
+  border: 2px solid transparent;
+  padding: 16px 16px 14px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.topicChip {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.topicBody {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topicEmoji { font-size: 2.4rem; line-height: 1; flex-shrink: 0; }
+
+.topicText {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.topicBtn {
+  align-self: stretch;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: var(--font-kr-body);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.topicBtn:hover { opacity: 0.88; }
+
 /* ── 일기 섹션 ── */
 .diaryThumb {
   width: 44px;
