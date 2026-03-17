@@ -90,12 +90,11 @@ export default function PhotoRequestModal({ elements, profile, onClose, onGenera
     return { name: place, key, photoUrl }
   })
 
-  // 주인공 레퍼런스 (사람 우선 → 없으면 장소)
-  const mainKey      = resolvePhotoKey(elements.mainPerson, childName) || '아이'
-  const personRef    = photos.persons[mainKey] ?? null
-  const placeRef     = placeItems.find(p => p.photoUrl)?.photoUrl ?? null
-  const referenceUrl = personRef  // 사람 사진: FLUX reference (얼굴 보존)
-  const placePhotoUrl = placeRef  // 장소 사진: 배경 참조
+  // 인물 사진 전체 배열 (등록된 것만)
+  const personRefItems = personItems.filter(p => p.photoUrl)
+  const referenceUrls  = personRefItems.map(p => p.photoUrl)
+  const referenceLabels = personRefItems.map(p => p.name)
+  const placePhotoUrl  = placeItems.find(p => p.photoUrl)?.photoUrl ?? null
 
   // 파일 업로드
   const handleFileChange = async (e) => {
@@ -153,9 +152,10 @@ export default function PhotoRequestModal({ elements, profile, onClose, onGenera
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          imagePrompt:   elements.imagePrompt,
-          referenceUrl:  referenceUrl  ?? null,
-          placePhotoUrl: placePhotoUrl ?? null,
+          imagePrompt:    elements.imagePrompt,
+          referenceUrls:  referenceUrls.length > 0 ? referenceUrls : undefined,
+          referenceLabels: referenceLabels.length > 0 ? referenceLabels : undefined,
+          placePhotoUrl:  placePhotoUrl ?? null,
         }),
       })
       const data = await res.json()
@@ -216,9 +216,7 @@ export default function PhotoRequestModal({ elements, profile, onClose, onGenera
                 <div className={styles.personInfo}>
                   <span className={styles.personName}>{name}</span>
                   {photoUrl
-                    ? <span className={`${styles.photoStatus} ${styles.registered}`}>
-                        {key === mainKey ? '✅ 주인공 (그림 기준)' : '✅ 사진 있음'}
-                      </span>
+                    ? <span className={`${styles.photoStatus} ${styles.registered}`}>✅ 사진 있음 (그림에 반영)</span>
                     : <span className={styles.photoStatus}>📷 사진 없음</span>
                   }
                 </div>
@@ -228,12 +226,14 @@ export default function PhotoRequestModal({ elements, profile, onClose, onGenera
 
           {/* 레퍼런스 안내 */}
           <div className={styles.refBox}>
-            {personRef ? (
+            {referenceUrls.length > 1 ? (
               <p className={styles.refNote}>
-                ✨ <strong>{mainKey}</strong> 사진을 기준으로 얼굴·헤어를 살려 그릴게요!
-                {personItems.filter(p => p.key !== mainKey && p.photoUrl).length > 0 && (
-                  <span className={styles.refSub}><br />⚠️ AI 특성상 한 번에 1명 얼굴만 기준 적용돼요. 나머지는 텍스트로 묘사됩니다.</span>
-                )}
+                ✨ <strong>{referenceLabels.join(', ')}</strong> 사진을 모두 반영할게요!<br />
+                <span className={styles.refSub}>각 인물의 얼굴·헤어를 함께 살려 그려줘요.</span>
+              </p>
+            ) : referenceUrls.length === 1 ? (
+              <p className={styles.refNote}>
+                ✨ <strong>{referenceLabels[0]}</strong> 사진을 기준으로 얼굴·헤어를 살려 그릴게요!
               </p>
             ) : (
               <p className={styles.refNote}>📸 사진이 없어도 일기 내용으로 그림을 만들 수 있어요!</p>
