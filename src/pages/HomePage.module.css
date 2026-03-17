@@ -378,3 +378,27 @@
 
 .sun { color: #e74c3c; }
 .sat { color: #3D5AFE; }
+
+/* ── 일기 섹션 ── */
+.diaryThumb {
+  width: 44px;
+  height: 60px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #E8EAF6;
+}
+
+.diaryShortcut {
+  background: none;
+  border: 1.5px solid var(--color-primary);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-family: var(--font-kr-body);
+  transition: background 0.15s;
+}
+.diaryShortcut:hover { background: #EEF1FF; }

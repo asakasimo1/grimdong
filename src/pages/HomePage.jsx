@@ -10,7 +10,7 @@ const EMOTION_EMOJI = {
   따뜻함: '🌸', 뿌듯함: '🌟', 신남: '🎈',
 }
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 6
 
 const MESSAGES = [
   '오늘도 멋진 그림 그려볼까? 🖍️',
@@ -28,6 +28,11 @@ const formatDate = (iso) => {
   return `${d.getMonth() + 1}월 ${d.getDate()}일`
 }
 
+const formatDiaryDate = (iso) => {
+  const [, m, d] = iso.split('-')
+  return `${+m}월 ${+d}일`
+}
+
 export default function HomePage() {
   const navigate  = useNavigate()
   const { user, signOut } = useAuthStore()
@@ -37,6 +42,12 @@ export default function HomePage() {
   const [page,      setPage]      = useState(0)
   const [loading,   setLoading]   = useState(true)
 
+  // 일기 목록
+  const [diaries,      setDiaries]      = useState([])
+  const [diaryTotal,   setDiaryTotal]   = useState(0)
+  const [diaryPage,    setDiaryPage]    = useState(0)
+  const [diaryLoading, setDiaryLoading] = useState(true)
+
   // 달력 뷰
   const [viewMode,    setViewMode]    = useState('list')
   const [calYear,     setCalYear]     = useState(() => new Date().getFullYear())
@@ -44,7 +55,8 @@ export default function HomePage() {
   const [calStories,  setCalStories]  = useState([])
   const [calLoading,  setCalLoading]  = useState(false)
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
+  const totalPages      = Math.ceil(total / PAGE_SIZE)
+  const diaryTotalPages = Math.ceil(diaryTotal / PAGE_SIZE)
 
   // 접속마다 랜덤 메시지 고정
   const message = useMemo(() => MESSAGES[Math.floor(Math.random() * MESSAGES.length)], [])
@@ -75,6 +87,26 @@ export default function HomePage() {
   }, [user])
 
   useEffect(() => { fetchStories(page) }, [fetchStories, page])
+
+  const fetchDiaries = useCallback(async (p) => {
+    if (!user) return
+    setDiaryLoading(true)
+    const from = p * PAGE_SIZE
+    const to   = from + PAGE_SIZE - 1
+    const [{ count }, { data }] = await Promise.all([
+      supabase.from('diaries').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+      supabase.from('diaries')
+        .select('id, date, diary_text, image_url, created_at')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false })
+        .range(from, to),
+    ])
+    setDiaryTotal(count ?? 0)
+    setDiaries(data ?? [])
+    setDiaryLoading(false)
+  }, [user])
+
+  useEffect(() => { fetchDiaries(diaryPage) }, [fetchDiaries, diaryPage])
 
   // 달력 스토리 로드
   useEffect(() => {
@@ -107,6 +139,18 @@ export default function HomePage() {
     } catch {}
 
     fetchStories(page)
+  }
+
+  const handleDiaryDelete = async (e, diary) => {
+    e.stopPropagation()
+    if (!window.confirm(`${formatDiaryDate(diary.date)} 일기를 삭제할까요?`)) return
+    const { error } = await supabase.from('diaries').delete().eq('id', diary.id)
+    if (error) { toast.error(`삭제 실패: ${error.message}`); return }
+    try {
+      const path = new URL(diary.image_url).pathname.split('/drawings/')[1]
+      if (path) await supabase.storage.from('drawings').remove([path])
+    } catch {}
+    fetchDiaries(diaryPage)
   }
 
   const handleCalPrev = () => {
@@ -249,6 +293,48 @@ export default function HomePage() {
               )}
             </>
           )
+        )}
+      </section>
+
+      {/* ── 나의 일기 섹션 ── */}
+      <section className={styles.recentWrap} style={{ marginTop: 32 }}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>
+            나의 일기
+            {diaryTotal > 0 && <span className={styles.totalCount}>{diaryTotal}</span>}
+          </h2>
+          <button className={styles.diaryShortcut} onClick={() => navigate('/diary')}>+ 새 일기</button>
+        </div>
+
+        {diaryLoading ? (
+          <div className={styles.emptyBox}>불러오는 중...</div>
+        ) : diaries.length === 0 ? (
+          <div className={styles.emptyBox}>
+            <p>아직 저장된 일기가 없어요.</p>
+            <p>일기를 써보세요! 📔</p>
+          </div>
+        ) : (
+          <>
+            <ul className={styles.storyList}>
+              {diaries.map((d) => (
+                <li key={d.id} className={styles.storyItem} onClick={() => navigate(`/diary/${d.id}`)}>
+                  <img src={d.image_url} alt="일기 카드" className={styles.diaryThumb} />
+                  <div className={styles.storyInfo}>
+                    <span className={styles.storyTitle}>{formatDiaryDate(d.date)}</span>
+                    <span className={styles.storySub}>{d.diary_text?.slice(0, 40)}{d.diary_text?.length > 40 ? '…' : ''}</span>
+                  </div>
+                  <button className={styles.deleteBtn} onClick={(e) => handleDiaryDelete(e, d)}>🗑️</button>
+                </li>
+              ))}
+            </ul>
+            {diaryTotalPages > 1 && (
+              <div className={styles.pagination}>
+                <button className={styles.pageBtn} onClick={() => setDiaryPage((p) => p - 1)} disabled={diaryPage === 0}>‹</button>
+                <span className={styles.pageInfo}>{diaryPage + 1} / {diaryTotalPages}</span>
+                <button className={styles.pageBtn} onClick={() => setDiaryPage((p) => p + 1)} disabled={diaryPage >= diaryTotalPages - 1}>›</button>
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>

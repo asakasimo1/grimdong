@@ -12,6 +12,7 @@ import SettingsPage   from './pages/SettingsPage'
 import SelectPage      from './pages/SelectPage'
 import DiaryInputPage  from './pages/DiaryInputPage'
 import DiaryResultPage from './pages/DiaryResultPage'
+import DiaryDetailPage from './pages/DiaryDetailPage'
 import AudioPlayer    from './components/AudioPlayer'
 import TransformModal from './components/TransformModal'
 
@@ -25,6 +26,7 @@ const PAGE_DEPTH = {
   '/draw':                  2,
   '/diary':                 2,
   '/diary-result':          3,
+  '/diary/':                3,
   '/story':                 3,
 }
 
@@ -139,6 +141,7 @@ export default function App() {
             <Route path="/story/:id"           element={<PrivateRoute><StoryPage /></PrivateRoute>} />
             <Route path="/diary"               element={<PrivateRoute><DiaryInputPage /></PrivateRoute>} />
             <Route path="/diary-result"        element={<PrivateRoute><DiaryResultPage /></PrivateRoute>} />
+            <Route path="/diary/:id"           element={<PrivateRoute><DiaryDetailPage /></PrivateRoute>} />
             <Route path="*"                    element={<Navigate to="/select" replace />} />
           </Routes>
         </motion.div>
