@@ -16,12 +16,13 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${SUPABASE_URL}/rest/v1/" \
+            "${SUPABASE_URL}/rest/v1/profiles?select=id&limit=1" \
             -H "apikey: ${SUPABASE_ANON_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
-          echo "Supabase 응답 코드: $STATUS"
-          if [ "$STATUS" != "200" ] && [ "$STATUS" != "401" ]; then
-            echo "::warning::Supabase 응답 이상 (status=$STATUS) — 대시보드 확인 필요"
+          CURL_EXIT=$?
+          echo "Supabase 응답 코드: $STATUS (curl exit: $CURL_EXIT)"
+          if [ $CURL_EXIT -ne 0 ]; then
+            echo "::error::Supabase 연결 실패 — 프로젝트가 정지됐을 수 있음 (curl exit=$CURL_EXIT)"
             exit 1
           fi
-          echo "✅ Supabase 활성 상태 확인 완료"
+          echo "✅ Supabase 활성 상태 확인 완료 (status=$STATUS)"
