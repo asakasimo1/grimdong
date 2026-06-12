@@ -16,8 +16,10 @@ export default async function handler(req, res) {
     if (!stationId) return res.status(400).json({ error: 'stationId 파라미터 필요' })
     const routes = (req.query.routes || '').split(',').map(r => r.trim()).filter(Boolean)
 
+    // GBIS 구버전 API는 serviceKey=1 로 동작하는 공개 엔드포인트 사용
+    const gbisKey = req.query.gbisKey || '1'
     const url = `${GBIS_OLD}/busarrivalservice/station` +
-      `?serviceKey=${KEY}&stationId=${stationId}`
+      `?serviceKey=${gbisKey}&stationId=${stationId}`
     try {
       const r = await fetch(url, {
         headers: { 'Accept': 'application/xml, text/xml' },
