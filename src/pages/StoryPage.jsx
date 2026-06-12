@@ -31,6 +31,8 @@ export default function StoryPage() {
   const [showSave, setShowSave] = useState(false)
   const [checks, setChecks]     = useState({ drawing: true, card: true })
   const [saving, setSaving]     = useState(false)
+  const [brainSaving, setBrainSaving] = useState(false)
+  const [brainDone, setBrainDone]     = useState(false)
 
   useEffect(() => {
     supabase.from('stories').select('*').eq('id', id).single()
@@ -49,6 +51,31 @@ export default function StoryPage() {
   const emoji = emotionEmoji[story.emotion] ?? '💛'
 
   const toggle = (key) => setChecks((prev) => ({ ...prev, [key]: !prev[key] }))
+
+  const handleBrainSave = async () => {
+    setBrainSaving(true)
+    try {
+      const res = await fetch('/api/save-brain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title:     story.title,
+          story:     story.story,
+          emotion:   story.emotion,
+          keywords:  story.keywords ?? [],
+          image_url: story.image_url ?? '',
+          date:      (story.created_at ?? new Date().toISOString()).slice(0, 10),
+        }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error)
+      setBrainDone(true)
+      setTimeout(() => setBrainDone(false), 3000)
+    } catch (e) {
+      alert('AI Brain 저장 실패: ' + e.message)
+    } finally {
+      setBrainSaving(false)
+    }
+  }
 
   const handleSave = async () => {
     if (!checks.drawing && !checks.card) return
@@ -117,6 +144,17 @@ export default function StoryPage() {
         <button className={styles.homeBtn} onClick={() => navigate('/home')}>홈으로</button>
         <button className={styles.saveBtn} onClick={() => setShowSave(true)}>💾 저장</button>
         <button className={styles.drawAgainBtn} onClick={() => navigate('/draw')}>다시 그리기 🎨</button>
+      </div>
+
+      {/* AI Brain 저장 버튼 */}
+      <div className={styles.brainSection}>
+        <button
+          className={`${styles.brainBtn} ${brainDone ? styles.brainBtnDone : ''}`}
+          onClick={handleBrainSave}
+          disabled={brainSaving || brainDone}
+        >
+          {brainDone ? '✅ AI Brain에 기억됐어요!' : brainSaving ? '저장 중...' : '🧠 AI Brain에 기억시키기'}
+        </button>
       </div>
 
       {/* 저장 팝업 */}
