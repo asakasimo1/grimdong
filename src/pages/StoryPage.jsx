@@ -31,8 +31,9 @@ export default function StoryPage() {
   const [showSave, setShowSave] = useState(false)
   const [checks, setChecks]     = useState({ drawing: true, card: true })
   const [saving, setSaving]     = useState(false)
-  const [brainSaving, setBrainSaving] = useState(false)
-  const [brainDone, setBrainDone]     = useState(false)
+  const [brainSaving, setBrainSaving]   = useState(false)
+  const [brainDone, setBrainDone]       = useState(false)
+  const [showBrainConfirm, setShowBrainConfirm] = useState(false)
 
   useEffect(() => {
     supabase.from('stories').select('*').eq('id', id).single()
@@ -150,12 +151,41 @@ export default function StoryPage() {
       <div className={styles.brainSection}>
         <button
           className={`${styles.brainBtn} ${brainDone ? styles.brainBtnDone : ''}`}
-          onClick={handleBrainSave}
+          onClick={() => !brainDone && setShowBrainConfirm(true)}
           disabled={brainSaving || brainDone}
         >
           {brainDone ? '✅ AI Brain에 기억됐어요!' : brainSaving ? '저장 중...' : '🧠 AI Brain에 기억시키기'}
         </button>
       </div>
+
+      {/* AI Brain 확인 팝업 */}
+      {showBrainConfirm && (
+        <div className={styles.backdrop} onClick={() => setShowBrainConfirm(false)}>
+          <div className={styles.saveModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.brainConfirmIcon}>🧠</div>
+            <p className={styles.saveTitle}>AI Brain에 기억시킬까요?</p>
+            <p className={styles.brainConfirmDesc}>
+              연습 그림은 취소하고,<br/>
+              기록으로 남기고 싶은 그림만 저장하세요.
+            </p>
+            <div className={styles.brainConfirmPreview}>
+              <span className={styles.brainConfirmEmoji}>{emoji}</span>
+              <span className={styles.brainConfirmTitle}>{story.title}</span>
+            </div>
+            <div className={styles.saveActions}>
+              <button className={styles.cancelBtn} onClick={() => setShowBrainConfirm(false)}>
+                취소 (연습용)
+              </button>
+              <button
+                className={styles.confirmBtn}
+                onClick={() => { setShowBrainConfirm(false); handleBrainSave() }}
+              >
+                기억시키기 ✨
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 저장 팝업 */}
       {showSave && (
