@@ -24,12 +24,12 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── 모드 2: 노선명으로 노선 조회 (?mode=route&routeName=56-1)
-  if (mode === 'route') {
-    const routeName = req.query.routeName || ''
-    if (!routeName) return res.status(400).json({ error: 'routeName 파라미터 필요' })
-    const url = `${BASE}/busrouteservice/v2/getRouteByNamev2` +
-      `?serviceKey=${encodeURIComponent(KEY)}&routeName=${encodeURIComponent(routeName)}&format=json`
+  // ── 모드 2: 노선 정류소 목록 조회 (?mode=route-stations&routeId=210000049)
+  if (mode === 'route-stations') {
+    const routeId = req.query.routeId || ''
+    if (!routeId) return res.status(400).json({ error: 'routeId 파라미터 필요' })
+    const url = `${BASE}/busrouteservice/v2/getRouteStationListv2` +
+      `?serviceKey=${encodeURIComponent(KEY)}&routeId=${routeId}&format=json`
     try {
       const r = await fetch(url, { signal: AbortSignal.timeout(8000) })
       const data = await r.json()
