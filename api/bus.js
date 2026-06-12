@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     const routes = (req.query.routes || '').split(',').map(r => r.trim()).filter(Boolean)
 
     const url = `${GBIS_OLD}/busarrivalservice/station` +
-      `?serviceKey=${encodeURIComponent(KEY)}&stationId=${stationId}`
+      `?serviceKey=${KEY}&stationId=${stationId}`
     try {
       const r = await fetch(url, {
         headers: { 'Accept': 'application/xml, text/xml' },
