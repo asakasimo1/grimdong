@@ -67,6 +67,22 @@ export default async function handler(req, res) {
     }
   }
 
+  // ── 모드: 에어코리아 미세먼지 조회 (?mode=dust&station=부천)
+  if (mode === 'dust') {
+    const station = req.query.station || '부천'
+    const url = 'https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty' +
+      `?serviceKey=${encodeURIComponent(KEY)}&stationName=${encodeURIComponent(station)}` +
+      `&dataTerm=DAILY&pageNo=1&numOfRows=1&returnType=json&ver=1.3`
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(8000) })
+      if (!r.ok) return res.status(502).json({ error: `upstream ${r.status}` })
+      const data = await r.json()
+      return res.status(200).json(data)
+    } catch (err) {
+      return res.status(500).json({ error: err.message })
+    }
+  }
+
   // ── 모드: ARS번호로 정류소 ID 조회 (?mode=ars&arsId=12139)
   if (mode === 'ars') {
     const arsId = req.query.arsId || ''
