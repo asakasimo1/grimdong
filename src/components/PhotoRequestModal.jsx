@@ -271,10 +271,10 @@ export default function PhotoRequestModal({ elements, profile, onClose, onGenera
                   </div>
                 ))}
               </div>
-              {placePhotoUrl && !personRef && (
+              {placePhotoUrl && referenceUrls.length === 0 && (
                 <p className={styles.placeRefNote}>✨ 장소 사진을 배경 기준으로 활용할게요!</p>
               )}
-              {placePhotoUrl && personRef && (
+              {placePhotoUrl && referenceUrls.length > 0 && (
                 <p className={styles.placeRefNote}>✨ 장소 사진도 배경 참고로 활용돼요!</p>
               )}
             </>
