@@ -34,6 +34,9 @@ export default function DiaryDetailPage() {
   const { user } = useAuthStore()
   const [diary,   setDiary]   = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showBrainConfirm, setShowBrainConfirm] = useState(false)
+  const [brainSaving, setBrainSaving] = useState(false)
+  const [brainDone,   setBrainDone]   = useState(false)
 
   useEffect(() => {
     if (!user || !id) return
@@ -64,6 +67,35 @@ export default function DiaryDetailPage() {
     } catch {}
     toast.success('일기가 삭제됐어요.')
     navigate('/home', { replace: true })
+  }
+
+  const handleBrainSave = async () => {
+    setBrainSaving(true)
+    try {
+      const keywords = [
+        ...(diary.elements?.persons ?? []),
+        ...(diary.elements?.places  ?? []),
+      ].slice(0, 5)
+      const res = await fetch('/api/save-brain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title:     `${diary.date} 그림일기`,
+          story:     diary.diary_text,
+          emotion:   diary.elements?.weather?.label ?? '',
+          keywords,
+          image_url: diary.image_url ?? '',
+          date:      diary.date,
+        }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error)
+      setBrainDone(true)
+      setTimeout(() => setBrainDone(false), 3000)
+    } catch (e) {
+      toast.error('AI Brain 저장 실패: ' + e.message)
+    } finally {
+      setBrainSaving(false)
+    }
   }
 
   if (loading) return (
@@ -102,6 +134,46 @@ export default function DiaryDetailPage() {
           ✏️ 새 일기
         </button>
       </div>
+
+      {/* AI Brain 저장 버튼 */}
+      <div className={styles.brainSection}>
+        <button
+          className={`${styles.brainBtn} ${brainDone ? styles.brainBtnDone : ''}`}
+          onClick={() => !brainDone && setShowBrainConfirm(true)}
+          disabled={brainSaving || brainDone}
+        >
+          {brainDone ? '✅ AI Brain에 기억됐어요!' : brainSaving ? '저장 중...' : '🧠 AI Brain에 기억시키기'}
+        </button>
+      </div>
+
+      {/* AI Brain 확인 팝업 */}
+      {showBrainConfirm && (
+        <div className={styles.backdrop} onClick={() => setShowBrainConfirm(false)}>
+          <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.confirmIcon}>🧠</div>
+            <p className={styles.confirmTitle}>AI Brain에 기억시킬까요?</p>
+            <p className={styles.confirmDesc}>
+              연습 일기는 취소하고,<br/>
+              기록으로 남기고 싶은 일기만 저장하세요.
+            </p>
+            <div className={styles.confirmPreview}>
+              <span className={styles.confirmDate}>{formatDate(diary.date)}</span>
+              {diary.elements?.weather?.icon && <span>{diary.elements.weather.icon}</span>}
+            </div>
+            <div className={styles.confirmActions}>
+              <button className={styles.cancelBtn} onClick={() => setShowBrainConfirm(false)}>
+                취소 (연습용)
+              </button>
+              <button
+                className={styles.okBtn}
+                onClick={() => { setShowBrainConfirm(false); handleBrainSave() }}
+              >
+                기억시키기 ✨
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

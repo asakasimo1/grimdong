@@ -182,6 +182,7 @@
 
 .canvasWrap {
   position: relative;
+  flex-shrink: 0;
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 4px 24px rgba(0,0,0,0.1);
@@ -194,7 +195,10 @@
 /* 프레임 오버레이 */
 .frameOverlay {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   border: 5px solid transparent;
   border-radius: 20px;
   pointer-events: none;
@@ -203,6 +207,7 @@
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
   padding: 6px;
+  box-sizing: border-box;
 }
 
 .frameRainbow {

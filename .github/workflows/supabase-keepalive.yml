@@ -1,0 +1,28 @@
+name: Supabase Keepalive
+
+on:
+  schedule:
+    - cron: '0 0 */6 * *'   # 6일마다 00:00 UTC (7일 정지 전 선제 실행)
+  workflow_dispatch:          # 수동 실행 가능
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Supabase DB 핑 (비활성 정지 방지)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
+          CURL_EXIT=$?
+          echo "Supabase 응답 코드: $STATUS (curl exit: $CURL_EXIT)"
+          if [ $CURL_EXIT -ne 0 ]; then
+            echo "::error::Supabase 연결 실패 — 프로젝트가 정지됐을 수 있음 (curl exit=$CURL_EXIT)"
+            exit 1
+          fi
+          echo "✅ Supabase 활성 상태 확인 완료 (status=$STATUS)"

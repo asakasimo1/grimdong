@@ -218,8 +218,8 @@ export default function DrawPage() {
         const dataUrl = canvas.toDataURL({ format: 'jpeg', quality: 0.85 })
         canvas.clear(); canvas.backgroundColor = '#FFFFFF'
         FabricImage.fromURL(dataUrl).then((img) => {
-          img.set({ selectable:false, evented:false }); canvas.add(img)
-          canvas.sendObjectToBack(img); canvas.renderAll()
+          img.set({ left:0, top:0, scaleX:1, scaleY:1, originX:'left', originY:'top', selectable:false, evented:false })
+          canvas.add(img); canvas.sendObjectToBack(img); canvas.renderAll()
         })
         historyRef.current = [JSON.stringify(canvas.toObject())]; historyIdxRef.current = 0; setCanUndo(false); return
       }
