@@ -18,7 +18,21 @@ const EraserIcon = () => (
   </svg>
 )
 
-function buildPrompt(profile) {
+// AI Brain(가족 어드바이저)에서 받아온 배경 텍스트를 프롬프트에 넣기 좋게
+// 다듬는다 — 너무 길면 앞부분(가족 프로필처럼 안정적인 정보)을 우선하고
+// 최근 로그·학습사실은 뒤에 붙여 전체 길이를 적당히 제한한다.
+function buildBackgroundBlock(brainContext) {
+  if (!brainContext) return null
+  const { familyProfile, familyLogs, learnedFacts } = brainContext
+  const facts = learnedFacts
+    ? Object.values(learnedFacts).filter(Boolean).join('\n')
+    : ''
+  const parts = [familyProfile, familyLogs, facts].filter(Boolean)
+  if (!parts.length) return null
+  return parts.join('\n\n').slice(0, 6000)
+}
+
+function buildPrompt(profile, brainContext) {
   const name    = profile?.name    || '수아'
   const age     = profile?.age     || '8'
   const gender  = profile?.gender  || '여자'
@@ -26,6 +40,7 @@ function buildPrompt(profile) {
   const friends = profile?.friends?.length ? profile.friends.join(', ') : null
   const family  = profile?.family?.length  ? profile.family.join(', ')  : null
   const pet     = profile?.pet || null
+  const background = buildBackgroundBlock(brainContext)
 
   const info = [
     `이름: ${name}`, `나이: ${age}세`, `성별: ${gender}아이`,
@@ -38,8 +53,12 @@ function buildPrompt(profile) {
   return `당신은 초등학생 ${name}의 그림일기를 대신 써주는 선생님입니다.
 ${name}이(가) 그린 그림을 보고, ${name}의 실제 하루 이야기를 1인칭 그림일기로 JSON 반환하세요.
 
-【아이 정보】
+【아이 정보 — 보호자가 설정에 직접 입력한 값(오래돼 정확하지 않을 수 있음)】
 ${info}
+${background ? `
+【배경 참고자료 — 가족이 평소 AI에게 알려준 실제 최신 정보(가족 일정·친인척·각자 취향 등)】
+${background}
+※ 위 자료는 참고용입니다. 그림 내용과 자연스럽게 맞아떨어질 때만 실제 친구·사촌 이름이나 최근 있었던 일(학원, 태권도 등)을 활용하세요. 위 【아이 정보】와 다른 내용이면 이 배경 참고자료 쪽(더 최신)을 우선하세요. 그림과 무관하면 억지로 넣지 마세요.` : ''}
 
 【JSON 형식 — 코드블록 없이 순수 JSON】
 {"title":"일기 제목(8자 이내)","story":"일기 본문","emotion":"주요 감정 1단어","keywords":["요소1","요소2","요소3"],"char_count":글자수}
@@ -133,6 +152,7 @@ export default function DrawPage() {
   const [canvasSize]  = useState(() => Math.min(window.innerWidth - 32, window.innerHeight - 310, 480))
 
   const [profile,         setProfile]         = useState(null)
+  const [brainContext,    setBrainContext]    = useState(null)
   const [color,           setColor]           = useState('#FF1744')
   const [size,            setSize]            = useState(8)
   const [loading,         setLoading]         = useState(false)
@@ -157,6 +177,16 @@ export default function DrawPage() {
     if (!user) return
     supabase.from('profiles').select('*').eq('id', user.id).single()
       .then(({ data }) => setProfile(data ?? null))
+  }, [user])
+
+  // AI Brain(가족 어드바이저) 배경지식 로드 — 실패해도 그림일기 생성엔
+  // 지장 없도록 조용히 무시 (api/context.js가 항상 200으로 응답함)
+  useEffect(() => {
+    if (!user) return
+    fetch('/api/context')
+      .then((r) => r.json())
+      .then((data) => setBrainContext(data))
+      .catch(() => setBrainContext(null))
   }, [user])
 
   useEffect(() => {
@@ -438,7 +468,7 @@ export default function DrawPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            systemInstruction: { parts: [{ text: buildPrompt(profile) }] },
+            systemInstruction: { parts: [{ text: buildPrompt(profile, brainContext) }] },
             contents: [{
               role: 'user',
               parts: [
