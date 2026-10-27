@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
 import { useDiaryStore } from '../store/useDiaryStore'
 import { supabase } from '../lib/supabase'
+import { callGemini } from '../lib/gemini'
 import PhotoRequestModal from '../components/PhotoRequestModal'
 import styles from './DiaryInputPage.module.css'
 
@@ -88,28 +89,19 @@ export default function DiaryInputPage() {
       const base64   = await fileToBase64(file)
       const mimeType = file.type || 'image/jpeg'
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              role: 'user',
-              parts: [
-                { inlineData: { mimeType, data: base64 } },
-                { text: '이 사진에서 어린이가 손으로 쓴 일기 텍스트를 읽어줘. 글씨체가 불분명해도 최대한 해석해서 순수 텍스트로만 출력해줘. 마크다운·설명 없이 일기 내용만 출력.' },
-              ],
-            }],
-            generationConfig: {
-              maxOutputTokens: 500,
-              thinkingConfig: { thinkingBudget: 0 },
-            },
-          }),
-        }
-      )
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error?.message ?? `Gemini ${res.status}`)
+      const data = await callGemini({
+        contents: [{
+          role: 'user',
+          parts: [
+            { inlineData: { mimeType, data: base64 } },
+            { text: '이 사진에서 어린이가 손으로 쓴 일기 텍스트를 읽어줘. 글씨체가 불분명해도 최대한 해석해서 순수 텍스트로만 출력해줘. 마크다운·설명 없이 일기 내용만 출력.' },
+          ],
+        }],
+        generationConfig: {
+          maxOutputTokens: 500,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
+      })
 
       const extracted = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
       if (!extracted.trim()) throw new Error('텍스트를 인식하지 못했어요')
@@ -174,21 +166,12 @@ export default function DiaryInputPage() {
 
 {"persons":[],"places":[],"imagePrompt":"","mainPerson":""}`
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 400, thinkingConfig: { thinkingBudget: 0 } },
-          }),
-        }
-      )
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error?.message ?? `Gemini ${res.status}`)
+      const data = await callGemini({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 400, thinkingConfig: { thinkingBudget: 0 } },
+      })
 
-      const raw   = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('분석 실패')
 

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Canvas, PencilBrush, CircleBrush, SprayBrush, FabricImage, FabricText, Shadow } from 'fabric'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
+import { callGemini } from '../lib/gemini'
 import * as Sentry from '@sentry/react'
 import { useAuthStore } from '../store/authStore'
 import { useTransformStore } from '../store/useTransformStore'
@@ -462,31 +463,22 @@ export default function DrawPage() {
       const dataUrl = overrideDataUrl ?? canvas.toDataURL({ format:'jpeg', quality:0.85 })
       const b64 = dataUrl.split(',')[1]
       // Gemini 2.5 Flash — Vision + 그림일기 생성
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: buildPrompt(profile, brainContext) }] },
-            contents: [{
-              role: 'user',
-              parts: [
-                { text: `이 그림을 보고 ${profile?.name||'수아'}의 오늘 하루 그림일기를 써주세요.` },
-                { inline_data: { mime_type: 'image/jpeg', data: b64 } },
-              ],
-            }],
-            generationConfig: {
-              temperature: 0.85,
-              maxOutputTokens: 1200,
-              thinkingConfig: { thinkingBudget: 0 },
-            },
-          }),
-        }
-      )
-      const data = await res.json()
+      const data = await callGemini({
+        systemInstruction: { parts: [{ text: buildPrompt(profile, brainContext) }] },
+        contents: [{
+          role: 'user',
+          parts: [
+            { text: `이 그림을 보고 ${profile?.name||'수아'}의 오늘 하루 그림일기를 써주세요.` },
+            { inlineData: { mimeType: 'image/jpeg', data: b64 } },
+          ],
+        }],
+        generationConfig: {
+          temperature: 0.85,
+          maxOutputTokens: 1200,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
+      })
       console.log('[Gemini 응답 전체]', JSON.stringify(data, null, 2))
-      if (!res.ok) throw new Error(data.error?.message ?? `Gemini ${res.status}`)
       const candidate = data.candidates?.[0]
       const finishReason = candidate?.finishReason
       const rawText = candidate?.content?.parts?.[0]?.text ?? ''

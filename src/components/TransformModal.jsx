@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import * as Sentry from '@sentry/react'
 import toast from 'react-hot-toast'
 import { useTransformStore } from '../store/useTransformStore'
+import { callGemini } from '../lib/gemini'
 import styles from '../pages/DrawPage.module.css'
 
 const TRANSFORM_STYLES = [
@@ -68,26 +69,22 @@ export default function TransformModal() {
       if (mode === 'draw') {
         // ① Gemini 2.5 Flash Vision — 그림 묘사 (영문)
         const b64 = canvasDataUrl.split(',')[1]
-        const geminiRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{
-                role: 'user',
-                parts: [
-                  { text: "Describe this child's drawing briefly in English for image generation. Identify objects, characters, colors, and scene. Under 80 words." },
-                  { inline_data: { mime_type: 'image/png', data: b64 } },
-                ],
-              }],
-              generationConfig: { maxOutputTokens: 120, thinkingConfig: { thinkingBudget: 0 } },
-            }),
-          }
-        )
-        const geminiData = await geminiRes.json()
-        const description = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
-          ?? "a colorful children's drawing with simple shapes"
+        let description = "a colorful children's drawing with simple shapes"
+        try {
+          const geminiData = await callGemini({
+            contents: [{
+              role: 'user',
+              parts: [
+                { text: "Describe this child's drawing briefly in English for image generation. Identify objects, characters, colors, and scene. Under 80 words." },
+                { inlineData: { mimeType: 'image/png', data: b64 } },
+              ],
+            }],
+            generationConfig: { maxOutputTokens: 120, thinkingConfig: { thinkingBudget: 0 } },
+          })
+          description = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? description
+        } catch (e) {
+          console.warn('[그림 묘사 실패 — 기본 묘사로 진행]', e.message)
+        }
 
         // ② fal.ai FLUX.2 [dev] — 스타일 이미지 생성
         const transformRes = await fetch('/api/transform', {

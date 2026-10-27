@@ -293,7 +293,7 @@ CREATE POLICY "own diaries" ON diaries FOR ALL USING (auth.uid() = user_id);
 
 | API | 용도 | 인증 |
 |-----|------|------|
-| Gemini 2.5 Flash | 일기 분석, 손글씨 OCR | VITE_GEMINI_API_KEY |
+| Gemini 2.5 Flash | 일기 분석, 손글씨 OCR (서버 프록시 api/gemini.js 경유) | GEMINI_API_KEY (서버 전용) |
 | Supabase REST | DB CRUD, Auth | VITE_SUPABASE_ANON_KEY |
 
 ---
@@ -305,7 +305,7 @@ CREATE POLICY "own diaries" ON diaries FOR ALL USING (auth.uid() = user_id);
 | `VITE_SUPABASE_URL` | Supabase 프로젝트 URL | 프론트엔드 |
 | `VITE_SUPABASE_ANON_KEY` | Supabase 익명 키 | 프론트엔드 |
 | `VITE_KAKAO_JS_KEY` | 카카오 JS SDK 키 | 프론트엔드 |
-| `VITE_GEMINI_API_KEY` | Google Gemini API 키 | 프론트엔드 |
+| `GEMINI_API_KEY` | Google Gemini API 키 (VITE_ 접두사 금지 — 브라우저 노출) | 서버리스(Vercel) |
 | `OPENAI_API_KEY` | OpenAI API 키 | Vercel 서버리스 |
 | `FAL_API_KEY` | fal.ai API 키 | Vercel 서버리스 |
 
