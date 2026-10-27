@@ -2,6 +2,8 @@
 // 브라우저에는 키를 두지 않는다. 키는 서버 환경변수 GEMINI_API_KEY (VITE_ 접두사 금지) 에만 존재.
 // 방어: ① Supabase 로그인 토큰 필수 ② 모델 고정 ③ 요청 필드 화이트리스트 ④ 크기·토큰 상한 ⑤ 사용자별 호출 제한
 
+import { verifyUser } from './_auth.js'
+
 const MODEL = 'gemini-2.5-flash'
 const MAX_BODY_BYTES = 4 * 1024 * 1024        // Vercel 요청 한도(4.5MB) 안쪽
 const MAX_OUTPUT_TOKENS = 1500
@@ -27,23 +29,6 @@ function rateLimited(userId) {
 }
 
 const fail = (res, status, message) => res.status(status).json({ error: { message } })
-
-async function verifyUser(req) {
-  const SUPABASE_URL = process.env.VITE_SUPABASE_URL
-  const SUPABASE_ANON = process.env.VITE_SUPABASE_ANON_KEY
-  const auth = req.headers.authorization ?? ''
-  if (!SUPABASE_URL || !SUPABASE_ANON || !auth.startsWith('Bearer ')) return null
-  try {
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: { apikey: SUPABASE_ANON, Authorization: auth },
-    })
-    if (!r.ok) return null
-    const u = await r.json()
-    return u?.id ?? null
-  } catch {
-    return null
-  }
-}
 
 function cleanPart(p) {
   if (!p || typeof p !== 'object') return null

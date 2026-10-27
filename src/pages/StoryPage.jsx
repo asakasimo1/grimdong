@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import html2canvas from 'html2canvas'
 import { supabase } from '../lib/supabase'
+import { authFetch } from '../lib/authFetch'
 import styles from './StoryPage.module.css'
 
 async function downloadBlob(blob, filename) {
@@ -56,7 +57,7 @@ export default function StoryPage() {
   const handleBrainSave = async () => {
     setBrainSaving(true)
     try {
-      const res = await fetch('/api/save-brain', {
+      const res = await authFetch('/api/save-brain', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/react'
 import { useAuthStore } from '../store/authStore'
 import { useDiaryStore } from '../store/useDiaryStore'
 import { supabase } from '../lib/supabase'
+import { authFetch } from '../lib/authFetch'
 import styles from './DiaryResultPage.module.css'
 
 async function shareOrDownload(blob, filename) {
@@ -108,7 +109,7 @@ export default function DiaryResultPage() {
         ...(analyzedElements?.persons ?? []),
         ...(analyzedElements?.places  ?? []),
       ].slice(0, 5)
-      const res = await fetch('/api/save-brain', {
+      const res = await authFetch('/api/save-brain', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

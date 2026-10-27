@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
 import { supabase } from '../lib/supabase'
+import { authFetch } from '../lib/authFetch'
 import styles from './DiaryDetailPage.module.css'
 
 async function shareOrDownload(url, filename) {
@@ -76,7 +77,7 @@ export default function DiaryDetailPage() {
         ...(diary.elements?.persons ?? []),
         ...(diary.elements?.places  ?? []),
       ].slice(0, 5)
-      const res = await fetch('/api/save-brain', {
+      const res = await authFetch('/api/save-brain', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
